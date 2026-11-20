@@ -133,7 +133,7 @@ label.btn{cursor:pointer}
 <div id="drop">Solte o KML / KMZ aqui</div>
 <input type="file" id="fKml" class="vh">
 <input type="file" id="fBak" class="vh" accept=".json,application/json">
-<input type="file" id="fFoto" class="vh" accept="image/*" multiple>
+<input type="file" id="fFoto" class="vh" accept="image/*" multiple><input type="file" id="fCam" class="vh" accept="image/*" capture="environment">
 
 <script>/*LEAFLET_JS*/</script>
 <script>
@@ -451,7 +451,7 @@ function plantaSvg(pl,W,H,cotas){const k=plantaCalc(pl),p=k.pts;if(p.length<2)re
       caixas.push(bx);g+=`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${fs}" text-anchor="${vert?(nx>0?'start':'end'):'middle'}" fill="#111">${txt}</text>`})}
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="background:#fff;border:1px solid var(--linha,#ddd);border-radius:8px">${g}</svg>`}
 function planta(it){
-  const c=it.campo,pl=JSON.parse(JSON.stringify(c.planta||{lados:[],rot:0,pos:it.g!=='None'?'manter':'gps'}));
+  const c=it.campo,pl=JSON.parse(JSON.stringify(c.plantaRasc||c.planta||{lados:[],rot:0,pos:it.g!=='None'?'manter':'gps'}));
   const temGeo=it.g==='Polygon'&&!c.planta;
   const info=k=>`${k.fechada?'<b style="color:var(--verde2)">✓ Planta fechada</b>':`Falta fechar: ${[k.gx?fmt(Math.abs(k.gx))+' m '+(k.gx>0?'→':'←'):'',k.gy?fmt(Math.abs(k.gy))+' m '+(k.gy>0?'↑':'↓'):''].filter(Boolean).join(' e ')}`} · Área <b>${fmt(k.area)} m²</b> · Perímetro ${fmt(k.per)} m`;
   const tela=()=>{const k=plantaCalc(pl),ult=pl.lados.length?pl.lados[pl.lados.length-1].d:null;
@@ -467,7 +467,8 @@ function planta(it){
      <div class="grid2"><label class="f">Posição no mapa<select id="plPos">${it.g!=='None'?`<option value="manter" ${pl.pos==='manter'?'selected':''}>Manter onde está</option>`:''}<option value="gps" ${pl.pos==='gps'?'selected':''}>Onde estou (GPS)</option><option value="mapa" ${pl.pos==='mapa'?'selected':''}>Centro do mapa</option><option value="nao" ${pl.pos==='nao'?'selected':''}>Não desenhar no mapa</option></select></label>
        <label class="f">Giro (graus, horário)<input id="plRot" inputmode="decimal" value="${inNum(pl.rot)}"></label></div>
      ${temGeo?'<p class="muted" style="margin:0">O desenho do KML será trocado pela planta (o original fica guardado).</p>':''}
-     <div class="acoes">${c.planta?'<button class="btn perigo" id="plDel">Apagar</button>':''}<button class="btn sec" id="plC">Cancelar</button><button class="btn" id="plOk">Usar planta</button></div>`);
+     <div class="acoes">${c.planta||c.plantaRasc?'<button class="btn perigo" id="plDel">Apagar</button>':''}<button class="btn sec" id="plC">Voltar</button><button class="btn" id="plOk">Usar planta</button></div>
+     <p class="muted" style="margin:6px 0 0">“Voltar” guarda o que já foi feito para continuar depois, sem mudar a área.</p><div></div>`);
     const M=$('#modal'),redesenha=()=>{$('#plSvg').innerHTML=plantaSvg(pl,480,260,true);$('#plInfo').innerHTML=info(plantaCalc(pl))};
     M.querySelectorAll('[data-m]').forEach(e=>{e.oninput=()=>{pl.lados[+e.dataset.m].m=num(e.value);redesenha()}});
     M.querySelectorAll('[data-d]').forEach(e=>e.onchange=()=>{pl.lados[+e.dataset.d].d=e.value;tela()});
@@ -475,11 +476,11 @@ function planta(it){
     M.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{pl.lados.push({d:b.dataset.add,m:null});tela();const ins=M.querySelectorAll('[data-m]');const u=ins[ins.length-1];u.focus();u.scrollIntoView({block:'nearest'})});
     if($('#plFecha'))$('#plFecha').onclick=()=>{const k=plantaCalc(pl);if(k.fechada){toast('A planta já está fechada');return}if(k.gx&&k.gy){toast('Falta fechar nas duas direções: acrescente os lados que faltam',3500);return}pl.lados.push(k.gx?{d:k.gx>0?'E':'O',m:+Math.abs(k.gx).toFixed(2)}:{d:k.gy>0?'N':'S',m:+Math.abs(k.gy).toFixed(2)});tela()};
     $('#plPos').onchange=e=>pl.pos=e.target.value;$('#plRot').oninput=e=>pl.rot=num(e.target.value)||0;
-    $('#plC').onclick=fechaModal;
-    if($('#plDel'))$('#plDel').onclick=()=>confirma('Apagar a planta desta benfeitoria? A área volta a ser a do KML ou a digitada.',()=>{delete c.planta;c.area=null;if(it.geoKml){Object.assign(it,it.geoKml);delete it.geoKml;it.kml=mede(it)}salva();mapaPronto=false;abreItem(it)});
+    $('#plC').onclick=()=>{const igual=c.planta&&JSON.stringify(pl)===JSON.stringify(c.planta);if(pl.lados.length&&!igual)c.plantaRasc=JSON.parse(JSON.stringify(pl));else delete c.plantaRasc;salva();fechaModal();abreItem(it)};
+    if($('#plDel'))$('#plDel').onclick=()=>confirma('Apagar a planta desta benfeitoria? A área volta a ser a do KML ou a digitada.',()=>{delete c.planta;delete c.plantaRasc;c.area=null;if(it.geoKml){Object.assign(it,it.geoKml);delete it.geoKml;it.kml=mede(it)}salva();mapaPronto=false;abreItem(it)});
     $('#plOk').onclick=async()=>{const kk=plantaCalc(pl);pl.lados=pl.lados.filter(l=>l.m);
       if(!kk.fechada){toast('A planta não fechou: confira as medidas ou use “Fechar”',3500);return}
-      c.planta=pl;c.area=+kk.area.toFixed(2);c.formato='irregular';
+      c.planta=pl;delete c.plantaRasc;c.area=+kk.area.toFixed(2);c.formato='irregular';
       if(pl.pos!=='nao'){const anc=await ancora(it,pl.pos);if(anc){if(!it.geoKml&&it.g!=='None')it.geoKml={g:it.g,c:it.c,holes:it.holes};const P=projetor(anc[1],anc[0]),r=kk.r,cx=r.reduce((s,q)=>s+q[0],0)/r.length,cy=r.reduce((s,q)=>s+q[1],0)/r.length,t=(pl.rot||0)*RAD,co=Math.cos(t),si=Math.sin(t);
         const ring=r.map(([x,y])=>{x-=cx;y-=cy;return P.inv([x*co+y*si,-x*si+y*co])});ring.push(ring[0]);it.g='Polygon';it.c=ring;it.holes=[];it.kml=mede(it);mapaPronto=false}}
       salva();fechaModal();abreItem(it);toast('Planta salva: '+fmt(c.area)+' m²')};
@@ -529,7 +530,7 @@ function abreItem(it,novo){
      <label class="f">${fm==='irregular'?'Área medida (m²) — formato irregular: informe a área ou fica a do KML':'Ou área medida direto (m²) — prevalece sobre as demais'}<input id="cArea" inputmode="decimal" value="${inNum(c.area)}"></label>`})()}
      <label class="f">Pé-direito / altura (m)<input id="cAlt" inputmode="decimal" value="${inNum(c.alt)}"></label>`}
    <div class="adot" id="adot"></div>
-   ${ehLin?'':`<button class="btn sec full" id="bPlanta" style="margin:-4px 0 12px">✏️ ${c.planta?`Planta pela trena (${c.planta.lados.length} lados · ${fmt(plantaCalc(c.planta).area)} m²) — editar`:'Desenhar planta pela trena (imóvel com recortes)'}</button>`}
+   ${ehLin?'':`<button class="btn sec full" id="bPlanta" style="margin:-4px 0 12px">✏️ ${c.plantaRasc?`Planta em andamento (${c.plantaRasc.lados.length} lados, não concluída) — continuar`:c.planta?`Planta pela trena (${c.planta.lados.length} lados · ${fmt(plantaCalc(c.planta).area)} m²) — editar`:'Desenhar planta pela trena (imóvel com recortes)'}</button>`}
    ${it.tipo==='curral'?`<h2>Cercamento por palanques</h2>
      <div class="grid2"><label class="f">Total de lances (vãos)<input id="cLances" inputmode="numeric" value="${inNum(c.lances)}"></label><label class="f">Nº de palanques<input id="cNPal" inputmode="numeric" value="${inNum(c.nPal)}"></label></div>
      <div class="grid2"><label class="f">Distância entre palanques (m)<input id="cEspPal" inputmode="decimal" value="${inNum(c.espPal)}"></label><label class="f">Réguas por lance<input id="cReg" inputmode="numeric" value="${inNum(c.reguas)}"></label></div>
@@ -647,7 +648,7 @@ function fechaItem(){if(PROJ)lembraSug();document.querySelectorAll('#sheet img')
 async function fotosItem(){
   const el=$('#fotos');if(!el)return;let h='';
   ITEM.leg=ITEM.leg||{};for(const id of ITEM.fotos){const b=await DB.getF(id);if(b)h+=`<div><img src="${URL.createObjectURL(b)}" data-leg="${id}"><button data-del="${id}">✕</button><span class="legf">${esc(ITEM.leg[id]||'toque p/ legenda')}</span></div>`}
-  el.innerHTML=h+`<label class="addfoto" for="fFoto"><b>＋</b>Foto</label>`;
+  el.innerHTML=h+`<label class="addfoto" for="fCam"><b>📷</b>Tirar foto</label><label class="addfoto" for="fFoto"><b>＋</b>Da galeria</label>`;
   el.querySelectorAll('[data-leg]').forEach(im=>im.onclick=()=>{const id=im.dataset.leg;modal(`<h3>Legenda da foto</h3><div class="filtros" style="flex-wrap:wrap">${['Vista externa','Vista interna','Vista aérea','Vista da propriedade','Detalhe'].map(x=>`<button class="chip" data-l="${x}">${x}</button>`).join('')}</div><label class="f">Ou digite<input id="lTxt" value="${esc(ITEM.leg[id]||'')}"></label><div class="acoes"><button class="btn sec" id="lC">Cancelar</button><button class="btn" id="lOk">Salvar</button></div>`);
     const ok=v=>{ITEM.leg[id]=v;salva();fechaModal();fotosItem()};$('#modal').querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>ok(b.dataset.l));$('#lC').onclick=fechaModal;$('#lOk').onclick=()=>ok($('#lTxt').value.trim())});
   el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>confirma('Excluir esta foto?',async()=>{await DB.delF(b.dataset.del);ITEM.fotos=ITEM.fotos.filter(f=>f!==b.dataset.del);salva();fotosItem()}));
@@ -658,7 +659,7 @@ async function reduzFoto(file,max=1600){
   cv.width=Math.round(img.naturalWidth*s);cv.height=Math.round(img.naturalHeight*s);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);URL.revokeObjectURL(img.src);
   return await new Promise(r=>cv.toBlob(r,'image/jpeg',0.82));
 }
-$('#fFoto').onchange=async e=>{
+$('#fFoto').onchange=$('#fCam').onchange=async e=>{
   if(!ITEM)return;const fs=[...e.target.files];toast('Processando fotos…');
   for(const f of fs){try{const b=await reduzFoto(f),id=uid();await DB.putF(id,b);ITEM.fotos.push(id)}catch(err){toast(err.message)}}
   salva();fotosItem();e.target.value='';

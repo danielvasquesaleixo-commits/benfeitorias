@@ -75,6 +75,21 @@ async def main():
     rp = await pp.value; await rp.wait_for_timeout(800); html = await rp.content()
     assert 'Croqui (medidas de campo' in html
     await rp.screenshot(path=os.path.join(O,'relatorio_planta.png'), full_page=True)
+    # planta não concluída: "Voltar" guarda o rascunho sem mexer na área; foto pela câmera anexa direto
+    await rp.close(); await pg.click('nav button[data-v=vLista]'); await pg.wait_for_timeout(200)
+    await pg.click('#bNovo'); await pg.wait_for_timeout(300); await pg.click('#bPlanta'); await pg.wait_for_timeout(200)
+    for d, m in [('N',6),('E',4)]:
+      await pg.click(f'[data-add={d}]'); await pg.locator('[data-m]').last.fill(str(m))
+    await pg.click('#plC'); await pg.wait_for_timeout(300)
+    bt = await pg.inner_text('#bPlanta'); print('botão após Voltar:', bt)
+    assert 'em andamento (2 lados' in bt and await pg.evaluate('ITEM.campo.area') is None
+    await pg.click('#bPlanta'); await pg.wait_for_timeout(200)
+    assert await pg.locator('[data-m]').count() == 2
+    await pg.click('#plC'); await pg.wait_for_timeout(300)
+    from PIL import Image; img = os.path.join(O, 'camera.jpg'); Image.new('RGB', (64, 48), (180, 120, 60)).save(img)
+    await pg.set_input_files('#fCam', img); await pg.wait_for_timeout(800)
+    nf = await pg.evaluate('ITEM.fotos.length'); print('fotos após câmera:', nf); assert nf == 1
+    assert await pg.locator('label[for=fCam]').count() == 1
     print('erros JS:', errs); assert not errs
     await b.close()
 asyncio.run(main())
