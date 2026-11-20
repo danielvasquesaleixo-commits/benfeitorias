@@ -1,0 +1,12 @@
+{
+  "name": "benfeitorias-em-campo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App (PWA) para conferir e medir benfeitorias rurais em campo a partir de KML/KMZ",
+  "scripts": {
+    "build": "python3 scripts/build.py",
+    "test": "python3 scripts/build.py && python3 test/e2e.py",
+    "serve": "python3 -m http.server 8080 -d dist"
+  },
+  "dependencies": { "leaflet": "1.9.4" }
+}

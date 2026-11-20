@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f3d2b">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>Benfeitorias em Campo</title>
+<style>/*LEAFLET_CSS*/</style>
+<style>
+:root{--verde:#1f3d2b;--verde2:#2f5d40;--fundo:#f4f2ec;--card:#fff;--txt:#1c1f1d;--sub:#5d655f;--linha:#dcd8cc;--ok:#15803d;--alerta:#b45309;--erro:#b91c1c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--fundo);color:var(--txt);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+header{background:var(--verde);color:#fff;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;min-height:56px;flex:none}
+header h1{font-size:17px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+header button{background:transparent;border:0;color:#fff;font-size:22px;width:40px;height:40px;border-radius:8px}
+header button:active{background:rgba(255,255,255,.15)}
+main{flex:1;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;overflow:auto;padding:12px 12px 24px;display:none}
+.view.on{display:block}
+#vMapa{padding:0;overflow:hidden}
+#mapa{position:absolute;inset:0;background:#e9e6dc;background-image:linear-gradient(#ddd9cc 1px,transparent 1px),linear-gradient(90deg,#ddd9cc 1px,transparent 1px);background-size:40px 40px}
+nav{display:none;background:#fff;border-top:1px solid var(--linha);padding-bottom:env(safe-area-inset-bottom);flex:none}
+nav.on{display:flex}
+nav button{flex:1;background:none;border:0;padding:10px 0 8px;font-size:13px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button b{font-size:20px;font-weight:400}
+nav button.on{color:var(--verde);font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:12px 16px;background:var(--verde);color:#fff;font-weight:600;min-height:46px}
+.btn.sec{background:#fff;color:var(--verde);border:1.5px solid var(--verde)}
+.btn.perigo{background:#fff;color:var(--erro);border:1.5px solid var(--erro)}
+.btn.full{width:100%}
+.btn:active{opacity:.8}
+.card{background:var(--card);border:1px solid var(--linha);border-radius:12px;padding:12px;margin-bottom:10px}
+.muted{color:var(--sub);font-size:14px}
+.row{display:flex;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vazio{text-align:center;padding:40px 16px;color:var(--sub)}
+.vazio .ico{font-size:48px}
+h2{font-size:15px;margin:18px 0 8px;color:var(--verde);text-transform:uppercase;letter-spacing:.04em}
+label.f{display:block;font-size:13px;color:var(--sub);margin-bottom:10px}
+label.f input,label.f select,label.f textarea{display:block;width:100%;margin-top:4px;padding:11px 12px;border:1px solid var(--linha);border-radius:9px;background:#fff;font-size:16px}
+label.f textarea{min-height:80px;resize:vertical}
+label.f input:focus,label.f select:focus,label.f textarea:focus{outline:2px solid var(--verde2);border-color:transparent}
+.proj{display:flex;gap:12px;align-items:center}
+.proj .info{flex:1;min-width:0}
+.proj .info b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra{height:6px;background:#e7e3d8;border-radius:3px;overflow:hidden;margin-top:6px}
+.barra i{display:block;height:100%;background:var(--ok)}
+.filtros{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin:0 -12px;padding-left:12px;padding-right:12px}
+.chip{flex:none;border:1px solid var(--linha);background:#fff;border-radius:20px;padding:7px 13px;font-size:14px}
+.chip.on{background:var(--verde);color:#fff;border-color:var(--verde)}
+.item{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.num{flex:none;min-width:34px;height:34px;border-radius:8px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;padding:0 4px}
+.item .info{flex:1;min-width:0}
+.item .nome{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.med{font-size:14px;margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 12px}
+.med span{white-space:nowrap}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:10px;background:#eef0ec;color:var(--sub)}
+.tag.ok{background:#dcfce7;color:#166534}
+.tag.al{background:#fef3c7;color:#92400e}
+.tag.camp{background:#dbeafe;color:#1e40af}
+.check{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--linha);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.check.on{background:var(--ok);border-color:var(--ok)}
+.fab{position:absolute;right:14px;bottom:18px;z-index:500;width:56px;height:56px;border-radius:50%;border:0;background:var(--verde);color:#fff;font-size:28px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.mapbtns{position:absolute;right:10px;top:10px;z-index:500;display:flex;flex-direction:column;gap:8px}
+.mapbtns button{width:44px;height:44px;border-radius:10px;border:1px solid var(--linha);background:#fff;font-size:20px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.mapbtns button.on{background:var(--verde);color:#fff}
+.lbl{background:none;border:0}
+.lbl span{display:inline-block;transform:translate(-50%,-50%);color:#fff;font:700 12px system-ui;padding:2px 6px;border-radius:9px;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);white-space:nowrap}
+.lbl span.ok::after{content:" ✓"}
+/* sheet */
+#sheet{position:fixed;inset:0;background:var(--fundo);z-index:2000;display:none;flex-direction:column}
+#sheet.on{display:flex}
+#sheet .corpo{flex:1;overflow:auto;padding:12px 12px 30px}
+.medkml{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.medkml div{background:#f7f6f1;border-radius:8px;padding:8px 10px}
+.medkml small{display:block;color:var(--sub);font-size:12px}
+.medkml b{font-size:17px}
+.adot{background:#1f3d2b;color:#fff;border-radius:12px;padding:12px;margin:12px 0}
+.adot small{opacity:.8}
+.adot b{font-size:22px;display:block}
+.fotos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.fotos div{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#ddd}
+.fotos img{width:100%;height:100%;object-fit:cover}
+.fotos div button{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff}
+.fotos .legf{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:3px 4px;text-align:center;pointer-events:none}
+.addfoto{display:flex;align-items:center;justify-content:center;flex-direction:column;border:2px dashed var(--linha);border-radius:8px;aspect-ratio:1;color:var(--sub);font-size:13px;background:#fff}
+.addfoto b{font-size:26px;font-weight:400}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:none;align-items:flex-end;justify-content:center}
+#modal.on{display:flex}
+#modal .caixa{background:#fff;width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom));max-height:90dvh;overflow:auto}
+#modal h3{margin:0 0 10px}
+#modal .acoes{display:flex;gap:8px;margin-top:14px}
+#modal .acoes .btn{flex:1}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:20px;z-index:4000;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
+#toast.on{opacity:1}
+.tab{width:100%;border-collapse:collapse;font-size:14px}
+.tab td,.tab th{padding:6px 4px;border-bottom:1px solid var(--linha);text-align:left}
+.tab td.n,.tab th.n{text-align:right;white-space:nowrap}
+.exp .btn{margin-bottom:8px}
+.hide{display:none!important}
+.vh{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0}
+label.btn{cursor:pointer}
+#drop{position:fixed;inset:0;z-index:5000;background:rgba(31,61,43,.85);color:#fff;display:none;align-items:center;justify-content:center;font-size:22px;font-weight:600;border:4px dashed #fff}
+#drop.on{display:flex}
+@media(min-width:760px){.view{padding:16px max(16px,calc(50% - 380px))}#sheet .corpo{padding:16px max(16px,calc(50% - 380px))}}
+</style>
+</head>
+<body>
+<header>
+  <button id="bVoltar" class="hide" aria-label="Voltar">‹</button>
+  <h1 id="titulo">Benfeitorias em Campo</h1>
+  <button id="bMenu" class="hide" aria-label="Dados do processo">⋯</button>
+</header>
+<main>
+  <section class="view on" id="vHome"></section>
+  <section class="view" id="vLista"></section>
+  <section class="view" id="vMapa"><div id="mapa"></div>
+    <div class="mapbtns"><button id="bFit" title="Enquadrar">⤢</button><button id="bSat" title="Satélite (precisa de internet)">🛰</button><button id="bGps" title="Minha posição">📍</button></div>
+  </section>
+  <section class="view" id="vExp"></section>
+</main>
+<nav id="nav">
+  <button data-v="vLista" class="on"><b>☰</b>Lista</button>
+  <button data-v="vMapa"><b>⌖</b>Mapa</button>
+  <button data-v="vExp"><b>⇪</b>Exportar</button>
+</nav>
+<div id="sheet"></div>
+<div id="modal"><div class="caixa"></div></div>
+<div id="toast"></div>
+<div id="drop">Solte o KML / KMZ aqui</div>
+<input type="file" id="fKml" class="vh">
+<input type="file" id="fBak" class="vh" accept=".json,application/json">
+<input type="file" id="fFoto" class="vh" accept="image/*" multiple>
+
+<script>/*LEAFLET_JS*/</script>
+<script>
+"use strict";
+/* ============ utilidades ============ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(v,d=2)=>v==null||!isFinite(v)?'—':v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const num=s=>{if(s==null)return null;s=String(s).trim().replace(/\s/g,'');if(!s)return null;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const v=parseFloat(s);return isFinite(v)?v:null};
+const inNum=v=>v==null?'':String(v).replace('.',',');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const hoje=()=>new Date().toLocaleDateString('pt-BR');
+function toast(m,t=2600){const e=$('#toast');e.textContent=m;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),t)}
+function fmtArea(m2){if(m2==null||!isFinite(m2))return '—';return m2>=10000?fmt(m2/1e4,4)+' ha':fmt(m2)+' m²'}
+
+/* ============ tipos de benfeitoria ============ */
+const TIPOS=[
+ ['funcionario','Casa de funcionário','#f97316',/funcion|colono|caseiro|empregad|retiro/],
+ ['residencia','Residência / Sede','#dc2626',/casa|sede|resid|moradia|chale/],
+ ['galpao','Galpão / Barracão','#7c3aed',/galp|barrac|armaz|deposit|garage|maquin|oficina|almoxar|alpendre|rancho/],
+ ['curral','Curral / Mangueira','#92400e',/curral|mangueir|tronco|embarcad|brete|balanca|seringa|apartad|lance/],
+ ['estabulo','Estábulo / Cocheira','#a16207',/estabul|cocheir|baia|ordenh|leiteir/],
+ ['aviario','Aviário / Pocilga','#db2777',/aviar|granja|frango|pocilg|chiqueir|suin/],
+ ['silo','Silo / Secador / Paiol','#475569',/silo|secador|paiol|tulha/],
+ ['agua','Poço / Caixa d\'água','#0284c7',/poco|artesian|caixa|reservat|cisterna|bebedour/],
+ ['represa','Represa / Açude / Tanque','#2563eb',/represa|acude|tanque|lago|barragem|lagoa/],
+ ['cerca','Cerca','#78350f',/cerca|divisa|aramado/],
+ ['estrada','Estrada / Carreador','#6b7280',/estrada|carreador|acesso|caminho|aceiro/],
+ ['rede','Rede elétrica','#eab308',/\brede\b|energia|eletric|poste|transform/],
+ ['reserva','Reserva Legal','#15803d',/reserva|\brl\b/],
+ ['app','APP','#0d9488',/\bapp\b|preserva/],
+ ['pastagem','Pastagem','#65a30d',/pasto|pastage|invernada|piquete|braquiar/],
+ ['lavoura','Lavoura','#ca8a04',/lavoura|soja|milho|cana|plantio|cultura|eucalipt/],
+ ['perimetro','Perímetro do imóvel','#111827',/perimetr|limite|imovel|fazenda|gleba|area total|matricula|sitio|chacara/],
+ ['outros','Outros','#64748b',null]
+].map(([k,nome,cor,re])=>({k,nome,cor,re}));
+const TIPO=Object.fromEntries(TIPOS.map(t=>[t.k,t]));
+const GRANDES=new Set(['reserva','app','pastagem','lavoura','perimetro']);
+function classifica(nome,pasta){
+  for(const txt of [norm(nome),norm(pasta)]){if(!txt)continue;for(const t of TIPOS)if(t.re&&t.re.test(txt))return t.k}
+  return 'outros';
+}
+const CONSERV=['','A – Novo','B – Entre novo e regular','C – Regular','D – Entre regular e reparos simples','E – Reparos simples','F – Entre reparos simples e importantes','G – Reparos importantes','H – Entre reparos importantes e sem valor','I – Sem valor (demolição)'];
+const PADRAO=['','Rústico','Simples','Médio','Superior'];
+
+/* ============ geodésia (plano topocêntrico local WGS84) ============ */
+const RA=6378137,EF=1/298.257223563,E2=EF*(2-EF),RAD=Math.PI/180;
+function projetor(lat0,lon0){
+  const s=Math.sin(lat0*RAD),w=Math.sqrt(1-E2*s*s);
+  const M=RA*(1-E2)/(w*w*w),N=RA/w,kx=N*Math.cos(lat0*RAD)*RAD,ky=M*RAD;
+  return {f:p=>[(p[0]-lon0)*kx,(p[1]-lat0)*ky],inv:q=>[q[0]/kx+lon0,q[1]/ky+lat0]};
+}
+function projDe(pts){let a=0,b=0;pts.forEach(p=>{a+=p[0];b+=p[1]});return projetor(b/pts.length,a/pts.length)}
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+function shoe(r){let s=0;for(let i=0,n=r.length;i<n;i++){const a=r[i],b=r[(i+1)%n];s+=a[0]*b[1]-b[0]*a[1]}return s/2}
+function hull(p){p=p.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);if(p.length<3)return p;const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];for(const q of p){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q)}for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>=2&&cr(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q)}up.pop();lo.pop();return lo.concat(up)}
+function retMin(pts){const h=hull(pts);if(h.length<3)return null;let best=null;for(let i=0;i<h.length;i++){const a=h[i],b=h[(i+1)%h.length];const L=dist(a,b);if(!L)continue;const ux=(b[0]-a[0])/L,uy=(b[1]-a[1])/L;let mnu=1e18,mxu=-1e18,mnv=1e18,mxv=-1e18;for(const q of h){const u=q[0]*ux+q[1]*uy,v=-q[0]*uy+q[1]*ux;mnu=Math.min(mnu,u);mxu=Math.max(mxu,u);mnv=Math.min(mnv,v);mxv=Math.max(mxv,v)}const A=(mxu-mnu)*(mxv-mnv);if(!best||A<best.A)best={A,d1:mxu-mnu,d2:mxv-mnv}}return best&&{comp:Math.max(best.d1,best.d2),larg:Math.min(best.d1,best.d2),A:best.A}}
+function mede(it){
+  const k={};
+  if(it.g==='Polygon'){
+    const P=projDe(it.c),r=it.c.map(P.f);
+    let A=Math.abs(shoe(r));(it.holes||[]).forEach(hh=>A-=Math.abs(shoe(hh.map(P.f))));
+    let per=0;for(let i=0;i<r.length;i++)per+=dist(r[i],r[(i+1)%r.length]);
+    k.area=A;k.perim=per;k.nv=r.length;
+    const m=retMin(r);if(m){k.comp=m.comp;k.larg=m.larg;k.ret=A/m.A}
+  }else if(it.g==='LineString'){
+    const P=projDe(it.c),r=it.c.map(P.f);let L=0;for(let i=1;i<r.length;i++)L+=dist(r[i-1],r[i]);k.len=L;
+  }
+  return k;
+}
+function rotulo(it){if(it.g==='Polygon'&&GRANDES.has(it.tipo)){return it.c.reduce((m,p)=>p[1]>m[1]?p:m,it.c[0])}return centro(it)}
+function centro(it){if(!it.c||!it.c.length)return null;if(it.g==='Point')return it.c[0];if(it.g==='Polygon'){const P=projDe(it.c),r=it.c.map(P.f);let A=0,cx=0,cy=0;for(let i=0;i<r.length;i++){const a=r[i],b=r[(i+1)%r.length],f=a[0]*b[1]-b[0]*a[1];A+=f;cx+=(a[0]+b[0])*f;cy+=(a[1]+b[1])*f}if(Math.abs(A)>1e-9)return P.inv([cx/(3*A),cy/(3*A)])}const m=Math.floor(it.c.length/2);return it.c[m]}
+function dentro(pt,ring){if(!pt)return false;let ins=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const a=ring[i],b=ring[j];if((a[1]>pt[1])!==(b[1]>pt[1])&&pt[0]<(b[0]-a[0])*(pt[1]-a[1])/(b[1]-a[1])+a[0])ins=!ins}return ins}
+const COB_OK=new Set(['curral','galpao','outros','estabulo']);
+const CIRC=new Set(['curral','silo','represa','agua']);
+const COMP_RE=/seringa|tronco|brete|embarc|balanc|cocho|bebedour|apartad|porteir/;
+function meio(x){if(x.g!=='LineString')return centro(x);const P=projDe(x.c),r=x.c.map(P.f);let L=0;const d=[0];for(let i=1;i<r.length;i++){L+=dist(r[i-1],r[i]);d.push(L)}for(let i=1;i<r.length;i++)if(d[i]>=L/2){const t=(L/2-d[i-1])/((d[i]-d[i-1])||1);return P.inv([r[i-1][0]+(r[i][0]-r[i-1][0])*t,r[i-1][1]+(r[i][1]-r[i-1][1])*t])}return x.c[0]}
+function dentroCurral(cur,x){return x!==cur&&!x.cob&&!(x.div&&x.div.length)&&dentro(meio(x),cur.c)&&!(x.g==='Polygon'&&((x.kml||{}).area||0)>=((cur.kml||{}).area||0))}
+function candidatosCob(cur,itens){return itens.filter(x=>x.g==='Polygon'&&COB_OK.has(x.tipo)&&!COMP_RE.test(norm(x.nome))&&dentroCurral(cur,x))}
+function candidatosInt(cur,itens){return itens.filter(x=>dentroCurral(cur,x)&&(x.g==='LineString'?!['estrada','rede'].includes(x.tipo):true))}
+function anexa(cur,x,itens){(cur.div=cur.div||[]).push({id:x.id,nome:x.nome,g:x.g,c:x.c,holes:x.holes||[],kml:x.kml||{},tipo:x.tipo});cur.fotos.push(...(x.fotos||[]));if(x.obs)cur.obs=(cur.obs?cur.obs+' | ':'')+x.obs;const i=itens.indexOf(x);if(i>=0)itens.splice(i,1)}
+function solta(cur,d,itens){cur.div=cur.div.filter(y=>y!==d);const n=Math.max(0,...itens.map(i=>i.n))+1;itens.push({id:uid(),n,nome:d.nome,tipo:d.tipo||'outros',pasta:cur.pasta,desc:'',g:d.g,c:d.c,holes:d.holes,kml:d.kml,campo:{},conserv:'',padrao:'',obs:'',fotos:[],ok:false})}
+function vincula(cur,x,itens){cur.cob={nome:x.nome,c:x.c,holes:x.holes||[],kml:x.kml||{},campo:x.campo||{},tipo:'',alt:null};cur.fotos.push(...(x.fotos||[]));if(x.obs)cur.obs=(cur.obs?cur.obs+' | ':'')+x.obs;const i=itens.indexOf(x);if(i>=0)itens.splice(i,1)}
+function autoCob(itens){const cs=itens.filter(i=>i.tipo==='curral'&&i.g==='Polygon').sort((a,b)=>(b.kml.area||0)-(a.kml.area||0));for(const cur of cs){if(!itens.includes(cur))continue;
+  if(!cur.cob){const k=candidatosCob(cur,itens).sort((a,b)=>(/cobert|telhad|coberto/.test(norm(b.nome))-/cobert|telhad|coberto/.test(norm(a.nome)))||b.kml.area-a.kml.area);if(k.length)vincula(cur,k[0],itens)}
+  for(const x of candidatosInt(cur,itens))anexa(cur,x,itens)}}
+function cobAdot(cob){const c=cob.campo||{};if(c.area!=null)return {v:c.area,src:'campo'};if(c.comp!=null&&c.larg!=null)return {v:c.comp*c.larg,src:'campo'};return {v:cob.kml.area??null,src:'KML'}}
+function linKmlCurral(it){const k=it.kml||{};let per=k.perim||0,div=0;(it.div||[]).forEach(d=>{if(d.g==='LineString')div+=d.kml.len||0});return {per,div,tot:per+div}}
+function linCurral(it){const c=it.campo||{};const vaos=c.lances??c.nPal;const calc=vaos&&c.espPal?vaos*c.espPal:null;const L=c.compLin??calc;return {L,calc,vaos,reg:L!=null&&c.reguas?L*c.reguas:null}}
+const FORMATOS={retangular:'Retangular',quadrado:'Quadrado',circular:'Circular',semicircular:'Semicircular',irregular:'Irregular'};
+function sugereFormato(k){if(!k||!k.area||!k.comp)return 'irregular';const asp=k.comp/k.larg,r=k.ret||0;
+  if(r>0.9)return asp<1.12?'quadrado':'retangular';
+  if(r>0.74&&r<0.84){if(asp<1.15)return 'circular';if(asp>1.75&&asp<2.3)return 'semicircular'}
+  return 'irregular'}
+function formatoDe(it){return (it.campo&&it.campo.formato)||sugereFormato(it.kml)}
+function adotada(it){
+  const c=it.campo||{},k=it.kml||{};
+  if(it.g==='LineString'){const usa=c.comp!=null;return {v:usa?c.comp:k.len,u:'m',src:usa?'campo':'KML',k:k.len,lin:true}}
+  let v=null,src=null;
+  const fm=formatoDe(it);
+  if(c.area!=null){v=c.area;src='campo'}else if((fm==='circular'||fm==='semicircular')&&c.diam!=null){v=Math.PI*c.diam*c.diam/(fm==='circular'?4:8);src='campo'}else if(fm==='quadrado'&&c.comp!=null){v=c.comp*c.comp;src='campo'}else if(fm!=='irregular'&&c.comp!=null&&c.larg!=null){v=c.comp*c.larg;src='campo'}
+  else if(k.area!=null){v=k.area;src='KML'}
+  return {v,u:'m²',src,k:k.area??null,lin:false};
+}
+function totais(itens){itens=itens||PROJ.itens;let area=0,n=0,cob=0,cerca=0;for(const it of itens){const a=adotada(it);if(!a.lin&&a.v!=null&&!GRANDES.has(it.tipo)){area+=a.v;n++}if(it.cob){const b=cobAdot(it.cob);if(b.v)cob+=b.v}if(a.lin&&it.tipo==='cerca'&&a.v)cerca+=a.v}return {area,n,cob,cerca}}
+function difPct(a){return a.src==='campo'&&a.k?(a.v-a.k)/a.k*100:null}
+function txtAdot(a){if(a.v==null)return '—';return a.lin?fmt(a.v)+' m':fmtArea(a.v)}
+
+/* ============ armazenamento ============ */
+const DB={db:null,mem:{p:new Map(),f:new Map()},
+ async open(){try{this.db=await new Promise((res,rej)=>{const r=indexedDB.open('benfeitorias-campo',1);r.onupgradeneeded=()=>{r.result.createObjectStore('proj',{keyPath:'id'});r.result.createObjectStore('foto')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}catch(e){this.db=null;console.warn('IndexedDB indisponível',e)}},
+ run(st,mode,fn){return new Promise((res,rej)=>{const t=this.db.transaction(st,mode),q=fn(t.objectStore(st));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})},
+ async put(p){if(!this.db)return this.mem.p.set(p.id,JSON.parse(JSON.stringify(p)));await this.run('proj','readwrite',s=>s.put(p))},
+ async all(){if(!this.db)return [...this.mem.p.values()];return await this.run('proj','readonly',s=>s.getAll())||[]},
+ async del(id){if(!this.db)return this.mem.p.delete(id);await this.run('proj','readwrite',s=>s.delete(id))},
+ async putF(id,b){if(!this.db)return this.mem.f.set(id,b);await this.run('foto','readwrite',s=>s.put(b,id))},
+ async getF(id){if(!this.db)return this.mem.f.get(id);return await this.run('foto','readonly',s=>s.get(id))},
+ async delF(id){if(!this.db)return this.mem.f.delete(id);await this.run('foto','readwrite',s=>s.delete(id))}
+};
+let PROJ=null,salvaT=null;
+function salva(){clearTimeout(salvaT);salvaT=setTimeout(()=>{if(PROJ){PROJ.alterado=Date.now();DB.put(PROJ).catch(e=>toast('Erro ao salvar: '+e.message))}},300)}
+const PADRAO_PERITO=()=>{let v=null;try{v=JSON.parse(localStorage.getItem('perito')||'null')}catch(e){}return v||{perito:'Daniel Vasques Aleixo',crea:'CREA-MS 12.577/D'}};
+
+/* ============ ZIP (leitura KMZ / escrita KMZ e XLSX) ============ */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(u){let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+const enc=new TextEncoder();
+function zip(files){ // [{name, data:Uint8Array|string}]
+  const parts=[],cent=[];let off=0;
+  const d=new Date(),dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate(),tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+  for(const f of files){
+    const nm=enc.encode(f.name),dat=typeof f.data==='string'?enc.encode(f.data):f.data,crc=crc32(dat);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,tm,true);h.setUint16(12,dt,true);h.setUint32(14,crc,true);h.setUint32(18,dat.length,true);h.setUint32(22,dat.length,true);h.setUint16(26,nm.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),nm,dat);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,tm,true);c.setUint16(14,dt,true);c.setUint32(16,crc,true);c.setUint32(20,dat.length,true);c.setUint32(24,dat.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    cent.push(new Uint8Array(c.buffer),nm);
+    off+=30+nm.length+dat.length;
+  }
+  const cs=cent.reduce((s,p)=>s+p.length,0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cent,new Uint8Array(e.buffer)],{type:'application/zip'});
+}
+async function unzip(buf){
+  const u=new Uint8Array(buf),dv=new DataView(buf);let eo=-1;
+  for(let i=u.length-22;i>=Math.max(0,u.length-70000);i--)if(dv.getUint32(i,true)===0x06054b50){eo=i;break}
+  if(eo<0)throw new Error('KMZ inválido');
+  const n=dv.getUint16(eo+10,true);let p=dv.getUint32(eo+16,true);const out=[];
+  for(let i=0;i<n;i++){
+    const met=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    const name=new TextDecoder().decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+    out.push({name,get:async()=>{const ln=dv.getUint16(lo+26,true),lx=dv.getUint16(lo+28,true),st=lo+30+ln+lx,raw=u.slice(st,st+cs);
+      if(met===0)return raw;if(met!==8)throw new Error('Compressão não suportada');
+      if(typeof DecompressionStream==='undefined')throw new Error('Este navegador não abre KMZ; exporte como KML no Google Earth');
+      return new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer())}});
+  }
+  return out;
+}
+
+/* ============ leitura KML ============ */
+function porNome(el,n){return [...el.getElementsByTagName('*')].filter(e=>e.localName===n)}
+function filho(el,n){for(const c of el.children)if(c.localName===n)return c;return null}
+function txtFilho(el,n){const c=filho(el,n);return c?c.textContent.trim():''}
+function coords(s){return s.trim().split(/\s+/).map(t=>t.split(',').map(Number)).filter(p=>p.length>=2&&isFinite(p[0])&&isFinite(p[1])).map(p=>[p[0],p[1]])}
+function fechaAnel(c){if(c.length>1){const a=c[0],b=c[c.length-1];if(Math.abs(a[0]-b[0])<1e-10&&Math.abs(a[1]-b[1])<1e-10)c=c.slice(0,-1)}return c}
+function lerKml(txt){
+  const doc=new DOMParser().parseFromString(txt,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw new Error('Arquivo KML com erro de leitura');
+  const docEl=porNome(doc,'Document')[0];const nomeDoc=docEl?txtFilho(docEl,'name'):'';
+  const itens=[];
+  for(const pm of porNome(doc,'Placemark')){
+    const nome=txtFilho(pm,'name')||'Sem nome';let desc=txtFilho(pm,'description').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    const pastas=[];let e=pm.parentElement;while(e){if(e.localName==='Folder'){const n=txtFilho(e,'name');if(n)pastas.unshift(n)}e=e.parentElement}
+    const pasta=pastas.join(' / ');
+    const geoms=[];
+    porNome(pm,'Polygon').forEach(pg=>{const ob=porNome(pg,'outerBoundaryIs')[0];if(!ob)return;const cc=porNome(ob,'coordinates')[0];if(!cc)return;const c=fechaAnel(coords(cc.textContent));if(c.length<3)return;const holes=porNome(pg,'innerBoundaryIs').map(ib=>{const x=porNome(ib,'coordinates')[0];return x?fechaAnel(coords(x.textContent)):[]}).filter(h=>h.length>=3);geoms.push({g:'Polygon',c,holes})});
+    porNome(pm,'LineString').forEach(ls=>{const cc=porNome(ls,'coordinates')[0];if(!cc)return;const c=coords(cc.textContent);if(c.length>=2)geoms.push({g:'LineString',c})});
+    porNome(pm,'LinearRing').forEach(lr=>{if(lr.parentElement&&/BoundaryIs$/.test(lr.parentElement.localName))return;const cc=porNome(lr,'coordinates')[0];if(!cc)return;const c=fechaAnel(coords(cc.textContent));if(c.length>=3)geoms.push({g:'Polygon',c,holes:[]})});
+    porNome(pm,'Point').forEach(pt=>{const cc=porNome(pt,'coordinates')[0];if(!cc)return;const c=coords(cc.textContent);if(c.length)geoms.push({g:'Point',c:[c[0]]})});
+    geoms.forEach((g,i)=>{
+      const tipo=classifica(nome,pasta);
+      // caminho fechado desenhado como linha => polígono (exceto cercas/estradas/redes)
+      if(g.g==='LineString'&&g.c.length>=4&&!['cerca','estrada','rede'].includes(tipo)){const a=g.c[0],b=g.c[g.c.length-1];if(Math.abs(a[0]-b[0])<1e-9&&Math.abs(a[1]-b[1])<1e-9){g.g='Polygon';g.c=fechaAnel(g.c);g.holes=[]}}
+      itens.push({id:uid(),nome:geoms.length>1?`${nome} (${i+1})`:nome,tipo,pasta,desc,g:g.g,c:g.c,holes:g.holes||[],campo:{},conserv:'',padrao:'',obs:'',fotos:[],ok:false});
+    });
+  }
+  return {nomeDoc,itens};
+}
+async function lerArquivoGeo(file){
+  const buf=await file.arrayBuffer(),u=new Uint8Array(buf);
+  if(u[0]===0x50&&u[1]===0x4b){const ents=await unzip(buf);const k=ents.find(e=>/(^|\/)doc\.kml$/i.test(e.name))||ents.find(e=>/\.kml$/i.test(e.name));if(!k)throw new Error('KMZ sem arquivo KML dentro');return lerKml(new TextDecoder().decode(await k.get()))}
+  return lerKml(new TextDecoder().decode(u));
+}
+
+/* ============ telas ============ */
+let VIEW='vHome',FILTRO='todos',FTIPO='',BUSCA='';
+function mostra(v){
+  VIEW=v;document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id===v));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  const emProj=v!=='vHome';$('#nav').classList.toggle('on',emProj);$('#bVoltar').classList.toggle('hide',!emProj);$('#bMenu').classList.toggle('hide',!emProj);
+  $('#titulo').textContent=emProj&&PROJ?PROJ.nome:'Benfeitorias em Campo';
+  if(v==='vHome')home();if(v==='vLista')lista();if(v==='vMapa')mapa();if(v==='vExp')exportTela();
+}
+async function home(){
+  const ps=(await DB.all()).sort((a,b)=>(b.alterado||0)-(a.alterado||0));
+  const el=$('#vHome');
+  el.innerHTML=`<div class="card"><b>Importe o KML/KMZ</b><p class="muted" style="margin:4px 0 12px">Polígonos, linhas e pontos desenhados no Google Earth. O app classifica pelo nome, mede área, perímetro e dimensões e guarda tudo neste aparelho para conferência em campo.</p>
+   <label class="btn full" for="fKml">＋ Importar KML / KMZ</label>
+   <label class="btn sec full" for="fBak" style="margin-top:8px">Restaurar backup (.json)</label>
+   <p class="muted" style="margin:10px 0 0;text-align:center">No computador, também dá para arrastar o arquivo para esta janela.</p></div>
+   ${!DB.db?'<div class="card" style="border-color:var(--alerta)"><b>Atenção:</b> <span class="muted">o armazenamento do navegador não está disponível aqui. Os dados ficam só enquanto a página estiver aberta — faça backup antes de fechar.</span></div>':''}
+   <h2>Perícias</h2>
+   ${ps.length?ps.map(p=>{const n=p.itens.length,ok=p.itens.filter(i=>i.ok).length;return `<div class="card proj" data-id="${p.id}"><div class="info"><b>${esc(p.nome)}</b><span class="muted">${esc(p.processo||'sem nº de processo')} · ${n} itens · ${ok} conferidos</span><div class="barra"><i style="width:${n?ok/n*100:0}%"></i></div></div><span style="font-size:22px;color:var(--sub)">›</span></div>`}).join(''):'<div class="vazio"><div class="ico">🗺️</div>Nenhuma perícia ainda.</div>'}`;
+  el.querySelectorAll('.proj').forEach(c=>c.onclick=async()=>{PROJ=(await DB.all()).find(p=>p.id===c.dataset.id);mapaPronto=false;mostra('vLista')});
+}
+function erro(msg){modal(`<h3>Não foi possível ler o arquivo</h3><p>${esc(msg)}</p><p class="muted">Confira se é um .kml ou .kmz exportado do Google Earth (Salvar lugar como…). Se o erro continuar, envie o arquivo no chat.</p><div class="acoes"><button class="btn" id="eOk">OK</button></div>`);$('#eOk').onclick=fechaModal}
+$('#fKml').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)importa(f)};
+async function importa(f){
+  if(!/\.(kml|kmz|xml)$/i.test(f.name)&&!/kml|kmz|zip|xml/.test(f.type||''))return erro(`"${f.name}" não parece ser KML/KMZ.`);
+  toast('Lendo '+f.name+'…');
+  try{
+    const r=await lerArquivoGeo(f);if(!r.itens.length)throw new Error('Nenhuma geometria encontrada no arquivo');
+    r.itens.forEach(it=>{it.kml=mede(it)});autoCob(r.itens);r.itens.forEach((it,i)=>it.n=i+1);
+    const nCob=r.itens.filter(i=>i.cob).length,nDiv=r.itens.reduce((t,i)=>t+(i.div||[]).length,0);if(nCob||nDiv)setTimeout(()=>toast(`Curral: ${nCob} cobertura(s) e ${nDiv} divisão(ões)/componente(s) agrupados`,3500),400);
+    const pd=PADRAO_PERITO();
+    const p={id:uid(),nome:r.nomeDoc||f.name.replace(/\.km[lz]$/i,''),processo:'',municipio:'',perito:pd.perito,crea:pd.crea,arquivo:f.name,criado:Date.now(),itens:r.itens};
+    dadosProjeto(p,true);
+  }catch(err){erro(err.message||String(err))}
+}
+$('#fBak').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const b=JSON.parse(await f.text());if(!b.projeto||!Array.isArray(b.projeto.itens))throw new Error('Backup inválido');
+    for(const [id,durl] of Object.entries(b.fotos||{})){const bl=await (await fetch(durl)).blob();await DB.putF(id,bl)}
+    const ex=(await DB.all()).find(p=>p.id===b.projeto.id);if(ex)b.projeto.id=uid();
+    await DB.put(b.projeto);toast('Backup restaurado');home();
+  }catch(err){erro(err.message||String(err))}
+};
+function dadosProjeto(p,novo){
+  modal(`<h3>${novo?'Nova perícia':'Dados da perícia'}</h3>
+   ${novo?`<p class="muted" style="margin-top:0">${p.itens.length} geometrias lidas de ${esc(p.arquivo)}: ${resumoTipos(p)}</p>`:''}
+   <label class="f">Imóvel / identificação<input id="mNome" value="${esc(p.nome)}"></label>
+   <label class="f">Nº do processo<input id="mProc" value="${esc(p.processo)}" placeholder="0000000-00.0000.8.12.0000"></label>
+   <label class="f">Município / UF<input id="mMun" value="${esc(p.municipio)}"></label>
+   <div class="grid2"><label class="f">Perito<input id="mPer" value="${esc(p.perito)}"></label><label class="f">Registro<input id="mCrea" value="${esc(p.crea)}"></label></div>
+   <div class="acoes">${novo?'':'<button class="btn perigo" id="mDel">Excluir</button>'}<button class="btn sec" id="mCanc">Cancelar</button><button class="btn" id="mOk">${novo?'Criar':'Salvar'}</button></div>`);
+  $('#mCanc').onclick=fechaModal;
+  $('#mOk').onclick=async()=>{p.nome=$('#mNome').value.trim()||'Perícia';p.processo=$('#mProc').value.trim();p.municipio=$('#mMun').value.trim();p.perito=$('#mPer').value.trim();p.crea=$('#mCrea').value.trim();
+    try{localStorage.setItem('perito',JSON.stringify({perito:p.perito,crea:p.crea}))}catch(e){}
+    p.alterado=Date.now();await DB.put(p);PROJ=p;fechaModal();mapaPronto=false;mostra(VIEW==='vHome'?'vLista':VIEW)};
+  if(!novo)$('#mDel').onclick=()=>confirma('Excluir esta perícia e todas as fotos deste aparelho?',async()=>{for(const it of p.itens)for(const f of it.fotos)await DB.delF(f);await DB.del(p.id);PROJ=null;mostra('vHome')});
+}
+function resumoTipos(p){const c={};p.itens.forEach(i=>c[i.tipo]=(c[i.tipo]||0)+1);return Object.entries(c).map(([k,n])=>`${n} ${TIPO[k].nome.split(' /')[0].toLowerCase()}`).join(', ')}
+
+function linhaMedidas(it){
+  const k=it.kml||{},a=adotada(it),d=difPct(a);let s='';
+  if(it.g==='Polygon'){s+=`<span>KML ${fmtArea(k.area)}${k.ret>0.85&&k.area<20000?` <span class="muted">(${fmt(k.comp,1)} × ${fmt(k.larg,1)})</span>`:''}</span>`}
+  else if(it.g==='LineString')s+=`<span>KML ${fmt(k.len)} m</span>`;
+  else if(it.g==='Point')s+=`<span class="muted">ponto</span>`;else s+=`<span class="muted">levantado em campo</span>`;
+  if(a.src==='campo')s+=`<span class="tag camp">campo ${txtAdot(a)}</span>`;
+  if(it.cob){const b=cobAdot(it.cob);s+=`<span>🏠 coberta ${fmtArea(b.v)}</span>`}
+  if(it.tipo==='curral'){const l=linCurral(it);if(l.L!=null||l.vaos)s+=`<span class="muted">${l.vaos?l.vaos+' lances · ':''}${l.L!=null?fmt(l.L,1)+' m lin.':''}</span>`;else if(it.div&&it.div.length)s+=`<span class="muted">${it.div.length} divisões · ${fmt(linKmlCurral(it).tot,1)} m lin. KML</span>`}
+  if(d!=null)s+=`<span class="tag ${Math.abs(d)>5?'al':'ok'}">${d>0?'+':''}${fmt(d,1)}%</span>`;
+  if(it.fotos.length)s+=`<span class="muted">📷 ${it.fotos.length}</span>`;
+  return s;
+}
+function lista(){
+  const el=$('#vLista'),its=PROJ.itens;
+  const tiposUsados=[...new Set(its.map(i=>i.tipo))];
+  let fil=its.filter(i=>(FILTRO==='todos'||(FILTRO==='pend'?!i.ok:i.ok))&&(!FTIPO||i.tipo===FTIPO)&&(!BUSCA||norm(i.nome+' '+i.n).includes(norm(BUSCA))));
+  fil.sort((a,b)=>a.n-b.n);
+  const ok=its.filter(i=>i.ok).length;
+  el.innerHTML=`<div class="filtros">
+    <button class="chip ${FILTRO==='todos'?'on':''}" data-f="todos">Todos ${its.length}</button>
+    <button class="chip ${FILTRO==='pend'?'on':''}" data-f="pend">Pendentes ${its.length-ok}</button>
+    <button class="chip ${FILTRO==='ok'?'on':''}" data-f="ok">Conferidos ${ok}</button></div>
+   <div class="row" style="margin-bottom:10px"><input id="busca" placeholder="Buscar nome ou nº" value="${esc(BUSCA)}" style="flex:1;padding:10px 12px;border:1px solid var(--linha);border-radius:9px">
+    <select id="ftipo" style="max-width:45%;padding:10px;border:1px solid var(--linha);border-radius:9px;background:#fff"><option value="">Todos os tipos</option>${tiposUsados.map(k=>`<option value="${k}" ${FTIPO===k?'selected':''}>${TIPO[k].nome}</option>`).join('')}</select></div>
+   ${fil.map(it=>`<div class="card item" data-id="${it.id}"><div class="num" style="background:${TIPO[it.tipo].cor}">${it.n}</div><div class="info"><div class="nome">${esc(it.nome)}</div><div class="muted">${TIPO[it.tipo].nome}</div><div class="med">${linhaMedidas(it)}</div></div><div class="check ${it.ok?'on':''}" data-ok="${it.id}">✓</div></div>`).join('')||'<div class="vazio">Nada neste filtro.</div>'}
+   ${(()=>{const t=totais();return `<div class="card" style="background:var(--verde);color:#fff;border:0"><div style="font-size:13px;opacity:.85">Total das benfeitorias (${t.n} itens, sem perímetro, pastagem, lavoura, RL e APP)</div><div style="font-size:24px;font-weight:700">${fmt(t.area)} m²</div>${t.cob?`<div style="font-size:14px;opacity:.9">Área coberta de currais: ${fmt(t.cob)} m² (já incluída no curral)</div>`:''}${t.cerca?`<div style="font-size:14px;opacity:.9">Cercas: ${fmt(t.cerca)} m</div>`:''}</div>`})()}
+   <button class="btn sec full" id="bNovo">＋ Benfeitoria encontrada em campo</button>`;
+  el.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{FILTRO=b.dataset.f;lista()});
+  $('#ftipo').onchange=e=>{FTIPO=e.target.value;lista()};
+  $('#busca').oninput=e=>{BUSCA=e.target.value;clearTimeout(lista.t);lista.t=setTimeout(()=>{lista();const b=$('#busca');b.focus();b.setSelectionRange(b.value.length,b.value.length)},350)};
+  el.querySelectorAll('.item').forEach(c=>c.onclick=ev=>{const okb=ev.target.closest('[data-ok]');const it=PROJ.itens.find(i=>i.id===c.dataset.id);if(okb){it.ok=!it.ok;salva();lista();mapaPronto=false;return}abreItem(it)});
+  $('#bNovo').onclick=novoItem;
+}
+function novoItem(){
+  const n=Math.max(0,...PROJ.itens.map(i=>i.n))+1;
+  const it={id:uid(),n,nome:'Nova benfeitoria',tipo:'outros',pasta:'Levantado em campo',desc:'',g:'None',c:[],holes:[],kml:{},campo:{},conserv:'',padrao:'',obs:'',fotos:[],ok:false};
+  PROJ.itens.push(it);salva();abreItem(it,true);
+}
+
+/* ============ ficha da benfeitoria ============ */
+let ITEM=null;
+function abreItem(it,novo){
+  ITEM=it;const k=it.kml||{},c=it.campo,ehLin=it.g==='LineString';
+  const sh=$('#sheet');sh.classList.add('on');
+  sh.innerHTML=`<header><button id="sFecha" aria-label="Fechar">‹</button><h1>#${it.n} ${esc(it.nome)}</h1><button id="sMapa" aria-label="Ver no mapa">⌖</button></header>
+  <div class="corpo">
+   <label class="f">Nome<input id="iNome" value="${esc(it.nome)}"></label>
+   <div class="grid2"><label class="f">Tipo<select id="iTipo">${TIPOS.map(t=>`<option value="${t.k}" ${t.k===it.tipo?'selected':''}>${t.nome}</option>`).join('')}</select></label>
+   <label class="f">Nº no laudo<input id="iN" inputmode="numeric" value="${it.n}"></label></div>
+   ${it.pasta||it.desc?`<p class="muted" style="margin:0 0 8px">${it.pasta?'Pasta: '+esc(it.pasta):''}${it.desc?'<br>'+esc(it.desc).slice(0,300):''}</p>`:''}
+   <h2>Medidas do KML</h2>
+   ${it.g==='Polygon'?`<div class="medkml"><div><small>Área</small><b>${fmtArea(k.area)}</b></div><div><small>Perímetro</small><b>${fmt(k.perim)} m</b></div>
+     <div><small>Retângulo mínimo</small><b>${fmt(k.comp,2)} × ${fmt(k.larg,2)} m</b></div><div><small>Vértices / forma</small><b>${k.nv} · ${k.ret>0.9?'retangular':k.ret>0.75?'quase ret.':'irregular'}</b></div></div>`
+   :ehLin?`<div class="medkml"><div><small>Comprimento</small><b>${fmt(k.len)} m</b></div><div><small>Vértices</small><b>${it.c.length}</b></div></div>`
+   :it.g==='Point'?`<p class="muted">Ponto (${fmt(it.c[0][1],6)}, ${fmt(it.c[0][0],6)}) — sem medida no KML. Informe as dimensões da trena.</p>`
+   :'<p class="muted">Benfeitoria sem geometria no KML (levantada em campo).</p>'}
+   <h2>Medidas de campo (trena)</h2>
+   ${ehLin?`<label class="f">Comprimento medido (m)<input id="cComp" inputmode="decimal" value="${inNum(c.comp)}" placeholder="${fmt(k.len)}"></label>
+     <div class="grid2"><label class="f">Nº de fios / tipo<input id="cFios" value="${esc(c.fios||'')}" placeholder="ex.: 5 fios liso"></label><label class="f">Espaç. mourões (m)<input id="cEsp" inputmode="decimal" value="${inNum(c.esp)}"></label></div>`
+   :`${(()=>{const fm=formatoDe(it),sug=sugereFormato(k);return `<label class="f">Formato${it.g==='Polygon'?` <span style="color:var(--verde2)">(pelo desenho: ${FORMATOS[sug].toLowerCase()})</span>`:''}<select id="cForm">${Object.entries(FORMATOS).map(([v,n])=>`<option value="${v}" ${v===fm?'selected':''}>${n}</option>`).join('')}</select></label>
+     ${fm==='retangular'?`<div class="grid2"><label class="f">Comprimento (m)<input id="cComp" inputmode="decimal" value="${inNum(c.comp)}" placeholder="${k.comp?fmt(k.comp):''}"></label><label class="f">Largura (m)<input id="cLarg" inputmode="decimal" value="${inNum(c.larg)}" placeholder="${k.larg?fmt(k.larg):''}"></label></div>`:''}
+     ${fm==='quadrado'?`<label class="f">Lado (m)<input id="cComp" inputmode="decimal" value="${inNum(c.comp)}" placeholder="${k.comp?fmt((k.comp+k.larg)/2):''}"></label>`:''}
+     ${fm==='circular'||fm==='semicircular'?`<label class="f">Diâmetro (m)${fm==='semicircular'?' — lado reto':''}<input id="cDiam" inputmode="decimal" value="${inNum(c.diam)}" placeholder="${k.comp?fmt(k.comp):''}"></label>`:''}
+     <label class="f">${fm==='irregular'?'Área medida (m²) — formato irregular: informe a área ou fica a do KML':'Ou área medida direto (m²) — prevalece sobre as demais'}<input id="cArea" inputmode="decimal" value="${inNum(c.area)}"></label>`})()}
+     <label class="f">Pé-direito / altura (m)<input id="cAlt" inputmode="decimal" value="${inNum(c.alt)}"></label>`}
+   <div class="adot" id="adot"></div>
+   ${it.tipo==='curral'?`<h2>Cercamento por palanques</h2>
+     <div class="grid2"><label class="f">Total de lances (vãos)<input id="cLances" inputmode="numeric" value="${inNum(c.lances)}"></label><label class="f">Nº de palanques<input id="cNPal" inputmode="numeric" value="${inNum(c.nPal)}"></label></div>
+     <div class="grid2"><label class="f">Distância entre palanques (m)<input id="cEspPal" inputmode="decimal" value="${inNum(c.espPal)}"></label><label class="f">Réguas por lance<input id="cReg" inputmode="numeric" value="${inNum(c.reguas)}"></label></div>
+     <label class="f">Tipo de madeira<input id="cMad" list="dlMad" value="${esc(c.madeira||'')}" placeholder="escolha ou digite"></label>
+     <datalist id="dlMad"><option>Aroeira</option><option>Cerne (madeira de lei)</option><option>Eucalipto tratado</option><option>Eucalipto não tratado</option><option>Madeira serrada</option><option>Roliço</option><option>Concreto</option><option>Mista</option></datalist>
+     <label class="f">Comprimento linear medido (m) — se vazio, usa lances × distância<input id="cCompLin" inputmode="decimal" value="${inNum(c.compLin)}"></label>
+     <div class="medkml" id="linCur"></div>
+     <h2>Componentes</h2>
+     <div class="grid2"><label class="f">Tronco (qtde)<input id="cTronco" inputmode="numeric" value="${inNum(c.tronco)}"></label><label class="f">Balança (qtde)<input id="cBal" inputmode="numeric" value="${inNum(c.balanca)}"></label></div>
+     <div class="grid2"><label class="f">Embarcadouro (qtde)<input id="cEmb" inputmode="numeric" value="${inNum(c.embarc)}"></label><label class="f">Seringa (qtde)<input id="cSer" inputmode="numeric" value="${inNum(c.seringa)}"></label></div>
+     <div class="grid2"><label class="f">Brete / corredor (m)<input id="cBrete" inputmode="decimal" value="${inNum(c.brete)}"></label><label class="f">Porteiras (qtde)<input id="cPort" inputmode="numeric" value="${inNum(c.port)}"></label></div>
+     <label class="f">Nº de divisões internas<input id="cDivs" inputmode="numeric" value="${inNum(c.divs)}" placeholder="${(it.div||[]).filter(d=>d.g==='LineString').length||''}"></label>
+     <h2>Divisões internas do KML</h2><div id="divBox"></div>
+     <h2>Parte coberta</h2><div id="cobBox"></div>`:''}
+   <h2>Planilha das construções</h2>
+   <div class="grid2"><label class="f">Tipologia<input id="iTipol" list="dlTipol" value="${esc(it.tipologia||'')}" placeholder="${esc(tipologiaPadrao(it))}"></label><label class="f">Idade aparente (anos)<input id="iIdade" inputmode="numeric" value="${inNum(it.idade)}"></label></div>
+   <div class="grid2"><label class="f">Padrão<input id="iPad" list="dlPad" value="${esc(it.padrao||'')}" placeholder="ex.: 8 - Médio"></label><label class="f">Conservação<input id="iCons" list="dlCons" value="${esc(it.conserv||'')}" placeholder="ex.: E - Regular"></label></div>
+   <datalist id="dlTipol">${sugest('tipologia',['Casa','Mangueiro','Galpão','Barracão','Casa de funcionário','Garagem','Depósito','Paiol','Silo','Poço artesiano','Caixa d\'água','Represa','Cerca'])}</datalist>
+   <datalist id="dlPad">${sugest('padrao',PADRAO.filter(Boolean))}</datalist>
+   <datalist id="dlCons">${sugest('conserv',CONSERV.filter(Boolean))}</datalist>
+   ${it.tipo!=='curral'?`<h2>Acabamentos</h2>${ACAB.map(([k,n,ph])=>`<label class="f">${n}<input data-ac="${k}" list="dl_${k}" value="${esc((it.acab||{})[k]||'')}" placeholder="${ph}"></label><datalist id="dl_${k}">${sugest('acab_'+k,ACAB_OP[k])}</datalist>`).join('')}`:''}
+   <label class="f">Descrição sucinta<textarea id="iDesc" placeholder="ex.: Construído em alvenaria de tijolos, esquadrias metálicas, piso cerâmico, cobertura de telhas cerâmicas…">${esc(it.descr||'')}</textarea></label>
+   <button class="btn sec full" id="gDesc" style="margin:-4px 0 12px">Gerar descrição a partir ${it.tipo==='curral'?'dos dados do curral':'dos acabamentos'}</button>
+   <label class="f">Divisão interna<textarea id="iDivi" placeholder="${it.tipo==='curral'?'ex.: 7 divisões, brete, seringa, tronco com balança e embarcador':'ex.: varanda, área de serviço, 4 suítes, cozinha, banheiro e sala'}">${esc(it.divisao||'')}</textarea></label>
+   ${it.tipo==='curral'?'<button class="btn sec full" id="gDivi" style="margin:-4px 0 12px">Gerar divisão interna a partir dos componentes</button>':''}
+   <label class="f">Observações de campo (não vão para a planilha)<textarea id="iObs">${esc(it.obs)}</textarea></label>
+   <h2>Fotos</h2>
+   <div class="fotos" id="fotos"></div>
+   <h2></h2>
+   <button class="btn full ${it.ok?'sec':''}" id="iOk">${it.ok?'✓ Conferido — desmarcar':'Marcar como conferido'}</button>
+   <button class="btn perigo full" id="iDel" style="margin-top:10px">Excluir item</button>
+  </div>`;
+  const upd=()=>{const a=adotada(it),d=difPct(a);$('#adot').innerHTML=`<small>Medida adotada no laudo (${a.src||'—'})</small><b>${txtAdot(a)}</b>${d!=null?`<small>Diferença campo × KML: ${d>0?'+':''}${fmt(d,1)}%</small>`:''}`};
+  upd();
+  const updCur=()=>{const b=$('#linCur');if(!b)return;const l=linCurral(it),lk=linKmlCurral(it);const est=c.espPal&&lk.tot?lk.tot/c.espPal:null;b.innerHTML=`<div><small>Linear campo</small><b>${l.L!=null?fmt(l.L)+' m':'—'}</b></div><div><small>Linear KML (perím. + divisões)</small><b>${fmt(lk.tot)} m</b></div><div><small>Lances</small><b>${l.vaos||'—'}</b>${est?`<small>KML ÷ distância ≈ ${fmt(est,0)}</small>`:''}</div><div><small>Réguas (m linear)</small><b>${l.reg!=null?fmt(l.reg)+' m':'—'}</b></div>`};
+  const updAll=()=>{upd();updCur()};
+  const bindNum=(id,key)=>{const e=$('#'+id);if(e)e.oninput=()=>{const v=num(e.value);if(v==null)delete c[key];else c[key]=v;updAll();salva()}};
+  bindNum('cComp','comp');bindNum('cLarg','larg');bindNum('cArea','area');bindNum('cAlt','alt');bindNum('cEsp','esp');bindNum('cDiam','diam');
+  bindNum('cNPal','nPal');bindNum('cLances','lances');bindNum('cDivs','divs');bindNum('cTronco','tronco');bindNum('cBal','balanca');bindNum('cEmb','embarc');bindNum('cSer','seringa');bindNum('cBrete','brete');bindNum('cEspPal','espPal');bindNum('cReg','reguas');bindNum('cPort','port');bindNum('cCompLin','compLin');
+  $('#cForm')&&($('#cForm').onchange=e=>{c.formato=e.target.value;salva();const y=$('#sheet .corpo').scrollTop;abreItem(it);$('#sheet .corpo').scrollTop=y});
+  if($('#cMad'))$('#cMad').oninput=e=>{c.madeira=e.target.value;salva()};
+  updCur();if($('#cobBox'))cobFicha(it);if($('#divBox'))divFicha(it);
+  if($('#cFios'))$('#cFios').oninput=e=>{c.fios=e.target.value;salva()};
+  $('#iNome').oninput=e=>{it.nome=e.target.value;sh.querySelector('h1').textContent=`#${it.n} ${it.nome}`;salva()};
+  $('#iN').onchange=e=>{const v=parseInt(e.target.value);if(v>0){it.n=v;salva();sh.querySelector('h1').textContent=`#${it.n} ${it.nome}`}};
+  $('#iTipo').onchange=e=>{it.tipo=e.target.value;salva();const y=$('#sheet .corpo').scrollTop;abreItem(it);$('#sheet .corpo').scrollTop=y};
+  $('#iCons').oninput=e=>{it.conserv=e.target.value;salva()};
+  $('#iTipol').oninput=e=>{it.tipologia=e.target.value;salva()};$('#iIdade').oninput=e=>{it.idade=num(e.target.value);salva()};
+  $('#iDesc').oninput=e=>{it.descr=e.target.value;salva()};$('#iDivi').oninput=e=>{it.divisao=e.target.value;salva()};
+  $('#gDesc').onclick=()=>{const t=it.tipo==='curral'?descCurral(it):descAcab(it);if(!t){toast('Preencha os acabamentos primeiro');return}$('#iDesc').value=it.descr=t;salva()};
+  document.querySelectorAll('[data-ac]').forEach(el=>el.oninput=()=>{it.acab=it.acab||{};it.acab[el.dataset.ac]=el.value;salva()});
+  if($('#gDivi'))$('#gDivi').onclick=()=>{$('#iDivi').value=it.divisao=diviCurral(it);salva()};
+  $('#iPad').oninput=e=>{it.padrao=e.target.value;salva()};
+  $('#iObs').oninput=e=>{it.obs=e.target.value;salva()};
+  $('#iOk').onclick=()=>{it.ok=!it.ok;salva();fechaItem()};
+  $('#iDel').onclick=()=>confirma(`Excluir "${it.nome}"?`,async()=>{for(const f of it.fotos)await DB.delF(f);PROJ.itens=PROJ.itens.filter(i=>i!==it);salva();fechaItem()});
+  $('#sFecha').onclick=fechaItem;
+  $('#sMapa').onclick=()=>{fechaItem();mostra('vMapa');setTimeout(()=>focaItem(it),150)};
+  if(it.g==='None')$('#sMapa').classList.add('hide');
+  fotosItem();
+  if(novo)setTimeout(()=>{$('#iNome').select()},100);
+}
+function divFicha(it){
+  const box=$('#divBox'),ds=it.div||[],cs=candidatosInt(it,PROJ.itens);
+  box.innerHTML=(ds.length?`<div class="card" style="padding:4px 10px"><table class="tab">${ds.map((d,i)=>`<tr><td>${esc(d.nome)}<br><small class="muted">${d.g==='LineString'?'linha':d.g==='Polygon'?'polígono':'ponto'}</small></td><td class="n">${d.g==='LineString'?fmt(d.kml.len)+' m':d.g==='Polygon'?fmtArea(d.kml.area):''}</td><td class="n"><button class="chip" data-s="${i}">soltar</button></td></tr>`).join('')}<tr><td><b>Perímetro + divisões</b></td><td class="n"><b>${fmt(linKmlCurral(it).tot)} m</b></td><td></td></tr></table></div>`:'<p class="muted" style="margin-top:0">Nenhuma linha ou componente desenhado dentro deste curral no KML.</p>')
+   +cs.map(x=>`<button class="btn sec full" style="margin-bottom:8px" data-a="${x.id}">Anexar #${x.n} ${esc(x.nome)}</button>`).join('');
+  const re=()=>{const y=$('#sheet .corpo').scrollTop;abreItem(it);$('#sheet .corpo').scrollTop=y};
+  box.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{solta(it,ds[+b.dataset.s],PROJ.itens);salva();re()});
+  box.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{anexa(it,PROJ.itens.find(i=>i.id===b.dataset.a),PROJ.itens);salva();re()});
+}
+function cobFicha(it){
+  const box=$('#cobBox');const cob=it.cob;
+  if(!cob){const cs=candidatosCob(it,PROJ.itens);
+    box.innerHTML=cs.length?`<p class="muted" style="margin-top:0">Nenhuma cobertura vinculada. Polígonos desenhados dentro deste curral:</p>${cs.map(x=>`<button class="btn sec full" style="margin-bottom:8px" data-v="${x.id}">Vincular #${x.n} ${esc(x.nome)} (${fmtArea(x.kml.area)})</button>`).join('')}`:'<p class="muted" style="margin-top:0">Nenhum polígono desenhado dentro deste curral no KML. Se a cobertura não foi desenhada, descreva nas observações.</p>';
+    box.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const x=PROJ.itens.find(i=>i.id===b.dataset.v);vincula(it,x,PROJ.itens);salva();const y=$('#sheet .corpo').scrollTop;abreItem(it);$('#sheet .corpo').scrollTop=y;toast('Cobertura vinculada')});return}
+  const k=cob.kml||{},c=cob.campo=cob.campo||{};
+  box.innerHTML=`<p class="muted" style="margin-top:0">Polígono do KML: ${esc(cob.nome)}</p>
+   <div class="medkml"><div><small>Área KML</small><b>${fmtArea(k.area)}</b></div><div><small>Retângulo mínimo</small><b>${fmt(k.comp,2)} × ${fmt(k.larg,2)} m</b></div></div>
+   <div class="grid2" style="margin-top:10px"><label class="f">Comprimento (m)<input id="kComp" inputmode="decimal" value="${inNum(c.comp)}" placeholder="${k.comp?fmt(k.comp):''}"></label><label class="f">Largura (m)<input id="kLarg" inputmode="decimal" value="${inNum(c.larg)}" placeholder="${k.larg?fmt(k.larg):''}"></label></div>
+   <label class="f">Ou área coberta medida direto (m²)<input id="kArea" inputmode="decimal" value="${inNum(c.area)}"></label>
+   <div class="grid2"><label class="f">Tipo de cobertura<input id="kTipo" list="dlCob" value="${esc(cob.tipo||'')}" placeholder="escolha ou digite"></label><label class="f">Pé-direito (m)<input id="kAlt" inputmode="decimal" value="${inNum(cob.alt)}"></label></div>
+   <datalist id="dlCob"><option>Telha de fibrocimento</option><option>Telha metálica</option><option>Telha cerâmica</option><option>Telha termoacústica</option><option>Palha / sapé</option><option>Lona</option></datalist>
+   <div class="adot" id="kAdot" style="background:var(--verde2)"></div>
+   <button class="btn sec full" id="kDesv">Desvincular (voltar a ser item separado)</button>`;
+  const u=()=>{const a=cobAdot(cob),d=a.src==='campo'&&k.area?(a.v-k.area)/k.area*100:null;$('#kAdot').innerHTML=`<small>Área coberta adotada (${a.src})</small><b>${fmtArea(a.v)}</b>${d!=null?`<small>Diferença campo × KML: ${d>0?'+':''}${fmt(d,1)}%</small>`:''}`};u();
+  const bn=(id,key)=>{$('#'+id).oninput=e=>{const v=num(e.target.value);if(v==null)delete c[key];else c[key]=v;u();salva()}};
+  bn('kComp','comp');bn('kLarg','larg');bn('kArea','area');
+  $('#kAlt').oninput=e=>{cob.alt=num(e.target.value);salva()};$('#kTipo').oninput=e=>{cob.tipo=e.target.value;salva()};
+  $('#kDesv').onclick=()=>confirma('Desvincular a parte coberta deste curral? Ela volta a ser um item separado.',()=>{const n=Math.max(0,...PROJ.itens.map(i=>i.n))+1;PROJ.itens.push({id:uid(),n,nome:cob.nome,tipo:'outros',pasta:it.pasta,desc:'',g:'Polygon',c:cob.c,holes:cob.holes,kml:cob.kml,campo:cob.campo,conserv:'',padrao:'',obs:'',fotos:[],ok:false});delete it.cob;salva();abreItem(it)});
+}
+const ACAB=[['estr','Paredes / estrutura','ex.: Alvenaria de tijolos'],['revest','Revestimento das paredes','ex.: reboco e pintura'],['piso','Piso','ex.: cerâmico'],['forro','Teto / forro','ex.: laje'],['cob','Telhado / telhas','ex.: telhas cerâmicas'],['jan','Janelas','ex.: metálicas'],['port','Portas','ex.: de madeira'],['inst','Instalações','ex.: elétricas e hidráulicas embutidas'],['outros','Outros acabamentos','ex.: churrasqueira em alvenaria']];
+const ACAB_OP={estr:['Alvenaria de tijolos','Alvenaria de blocos de concreto','Madeira','Estrutura metálica','Pré-moldado de concreto','Misto alvenaria e madeira'],revest:['reboco e pintura','reboco sem pintura','sem reboco','azulejo nas áreas molhadas','textura'],piso:['cerâmico','porcelanato','cimentado','concreto','madeira','terra batida'],forro:['laje','PVC','madeira','gesso','sem forro'],cob:['telhas cerâmicas','telhas de fibrocimento','telhas metálicas','telhas termoacústicas','telhas de concreto','palha'],jan:['metálicas','de madeira','de alumínio','basculantes metálicas','de vidro temperado'],port:['de madeira','metálicas','de alumínio','de vidro'],inst:['elétricas e hidráulicas embutidas','elétricas aparentes','elétricas e hidráulicas aparentes','sem instalações'],outros:[]};
+function descAcab(it){const a=it.acab||{},lo=x=>x?x.trim().replace(/^./,c=>c.toLowerCase()):'',p=[];
+  if(a.estr)p.push('Construído em '+lo(a.estr));if(a.revest)p.push('paredes com '+lo(a.revest));
+  if(a.jan&&a.port&&lo(a.jan)===lo(a.port))p.push('janelas e portas '+lo(a.jan));else{if(a.jan)p.push('janelas '+lo(a.jan));if(a.port)p.push('portas '+lo(a.port))}
+  if(a.piso)p.push('piso '+lo(a.piso));if(a.cob)p.push('cobertura de '+lo(a.cob));if(a.forro)p.push(/^sem/.test(lo(a.forro))?lo(a.forro):'forro de '+lo(a.forro));if(a.inst)p.push('instalações '+lo(a.inst));if(a.outros)p.push(lo(a.outros));
+  if(!p.length)return '';return (listaPt(p)+'.').replace(/^./,c=>c.toUpperCase())}
+function tipologiaPadrao(it){return {curral:'Mangueiro',residencia:'Casa',funcionario:'Casa de funcionário',galpao:'Galpão',agua:'Poço / caixa d\'água'}[it.tipo]||TIPO[it.tipo].nome.split(' /')[0]}
+function sugest(campo,base){const v=new Set(base);(PROJ?PROJ.itens:[]).forEach(i=>{if(i[campo])v.add(i[campo])});try{(JSON.parse(localStorage.getItem('sug_'+campo)||'[]')).forEach(x=>v.add(x))}catch(e){}return [...v].map(x=>`<option value="${esc(x)}">`).join('')}
+function lembraSug(){try{for(const k of ['tipologia','padrao','conserv',...ACAB.map(a=>'acab_'+a[0])]){const v=new Set(JSON.parse(localStorage.getItem('sug_'+k)||'[]'));PROJ.itens.forEach(i=>{const x=k.startsWith('acab_')?(i.acab||{})[k.slice(5)]:i[k];if(x)v.add(x)});localStorage.setItem('sug_'+k,JSON.stringify([...v].slice(-40)))}}catch(e){}}
+function listaPt(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' e '+a[a.length-1]}
+function descCurral(it){const c=it.campo||{},fm=FORMATOS[formatoDe(it)].toLowerCase(),l=linCurral(it);let t=`Mangueiro ${fm==='irregular'?'':fm+' '}implantado em madeira`;
+  if(c.madeira)t+=`, com palanques de ${c.madeira.toLowerCase()}`;
+  if(l.vaos)t+=`, ${l.vaos} lances${c.espPal?` de ${fmt(c.espPal)} m`:''}`;if(c.reguas)t+=` com ${c.reguas} réguas por lance`;
+  if(l.L!=null)t+=`, totalizando ${fmt(l.L)} m lineares de cerca`;
+  if(it.cob){const b=cobAdot(it.cob);t+=`; possui área coberta de ${fmt(b.v)} m²${it.cob.tipo?' em '+it.cob.tipo.toLowerCase():''}`}
+  return t+'.'}
+function diviCurral(it){const c=it.campo||{},p=[];const nd=c.divs??(it.div||[]).filter(d=>d.g==='LineString').length;
+  if(nd)p.push(nd+(nd>1?' divisões':' divisão'));if(c.brete)p.push(`brete (${fmt(c.brete)} m)`);if(c.seringa)p.push(c.seringa>1?c.seringa+' seringas':'seringa');
+  if(c.tronco)p.push((c.tronco>1?c.tronco+' troncos':'tronco')+(c.balanca?' com balança':''));else if(c.balanca)p.push('balança');
+  if(c.embarc)p.push(c.embarc>1?c.embarc+' embarcadouros':'embarcadouro');if(c.port)p.push(c.port+(c.port>1?' porteiras':' porteira'));
+  return p.length?listaPt(p).replace(/^./,x=>x.toUpperCase())+'.':''}
+function fechaItem(){if(PROJ)lembraSug();document.querySelectorAll('#sheet img').forEach(i=>URL.revokeObjectURL(i.src));$('#sheet').classList.remove('on');$('#sheet').innerHTML='';ITEM=null;mapaPronto=false;mostra(VIEW)}
+async function fotosItem(){
+  const el=$('#fotos');if(!el)return;let h='';
+  ITEM.leg=ITEM.leg||{};for(const id of ITEM.fotos){const b=await DB.getF(id);if(b)h+=`<div><img src="${URL.createObjectURL(b)}" data-leg="${id}"><button data-del="${id}">✕</button><span class="legf">${esc(ITEM.leg[id]||'toque p/ legenda')}</span></div>`}
+  el.innerHTML=h+`<label class="addfoto" for="fFoto"><b>＋</b>Foto</label>`;
+  el.querySelectorAll('[data-leg]').forEach(im=>im.onclick=()=>{const id=im.dataset.leg;modal(`<h3>Legenda da foto</h3><div class="filtros" style="flex-wrap:wrap">${['Vista externa','Vista interna','Vista aérea','Vista da propriedade','Detalhe'].map(x=>`<button class="chip" data-l="${x}">${x}</button>`).join('')}</div><label class="f">Ou digite<input id="lTxt" value="${esc(ITEM.leg[id]||'')}"></label><div class="acoes"><button class="btn sec" id="lC">Cancelar</button><button class="btn" id="lOk">Salvar</button></div>`);
+    const ok=v=>{ITEM.leg[id]=v;salva();fechaModal();fotosItem()};$('#modal').querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>ok(b.dataset.l));$('#lC').onclick=fechaModal;$('#lOk').onclick=()=>ok($('#lTxt').value.trim())});
+  el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>confirma('Excluir esta foto?',async()=>{await DB.delF(b.dataset.del);ITEM.fotos=ITEM.fotos.filter(f=>f!==b.dataset.del);salva();fotosItem()}));
+}
+async function reduzFoto(file,max=1600){
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('Imagem não suportada'));i.src=URL.createObjectURL(file)});
+  const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),cv=document.createElement('canvas');
+  cv.width=Math.round(img.naturalWidth*s);cv.height=Math.round(img.naturalHeight*s);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);URL.revokeObjectURL(img.src);
+  return await new Promise(r=>cv.toBlob(r,'image/jpeg',0.82));
+}
+$('#fFoto').onchange=async e=>{
+  if(!ITEM)return;const fs=[...e.target.files];toast('Processando fotos…');
+  for(const f of fs){try{const b=await reduzFoto(f),id=uid();await DB.putF(id,b);ITEM.fotos.push(id)}catch(err){toast(err.message)}}
+  salva();fotosItem();e.target.value='';
+};
+
+/* ============ mapa ============ */
+let MAP=null,camada=null,sat=null,gpsW=null,gpsM=null,mapaPronto=false,LAYERS={};
+const ll=p=>[p[1],p[0]];
+function mapa(){
+  if(!MAP){
+    MAP=L.map('mapa',{zoomControl:false,attributionControl:false,maxZoom:22});
+    L.control.zoom({position:'bottomleft'}).addTo(MAP);
+    L.control.scale({imperial:false,position:'bottomright'}).addTo(MAP);
+    sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:22,maxNativeZoom:19});
+    $('#bFit').onclick=enquadra;
+    $('#bSat').onclick=()=>{const b=$('#bSat');if(MAP.hasLayer(sat)){MAP.removeLayer(sat);b.classList.remove('on')}else{sat.addTo(MAP);sat.bringToBack();b.classList.add('on');if(!navigator.onLine)toast('Sem internet: a imagem de satélite não vai carregar')}};
+    $('#bGps').onclick=gps;
+  }
+  setTimeout(()=>{MAP.invalidateSize();if(!mapaPronto)desenha()},50);
+}
+function desenha(){
+  if(camada)camada.remove();camada=L.featureGroup().addTo(MAP);LAYERS={};
+  const ord=PROJ.itens.slice().sort((a,b)=>(GRANDES.has(b.tipo)?1:0)-(GRANDES.has(a.tipo)?1:0));
+  for(const it of ord){
+    if(it.g==='None'||!it.c.length)continue;const t=TIPO[it.tipo];let lay;
+    const st={color:t.cor,weight:it.ok?3:2,dashArray:it.ok?null:'6 4',fillOpacity:GRANDES.has(it.tipo)?0.08:0.3};
+    if(it.g==='Polygon')lay=L.polygon([it.c.map(ll),...(it.holes||[]).map(h=>h.map(ll))],st);
+    else if(it.g==='LineString')lay=L.polyline(it.c.map(ll),{...st,weight:3});
+    else lay=L.circleMarker(ll(it.c[0]),{radius:8,color:'#fff',weight:2,fillColor:t.cor,fillOpacity:1});
+    lay.on('click',()=>abreItem(it));lay.addTo(camada);
+    (it.div||[]).forEach(d=>{const st2={color:t.cor,weight:2.5};const l2=d.g==='LineString'?L.polyline(d.c.map(ll),st2):d.g==='Polygon'?L.polygon(d.c.map(ll),{...st2,fillOpacity:.3}):L.circleMarker(ll(d.c[0]),{radius:5,color:'#fff',weight:1.5,fillColor:t.cor,fillOpacity:1});l2.on('click',()=>abreItem(it));l2.addTo(camada)});
+    if(it.cob){const cl=L.polygon(it.cob.c.map(ll),{color:t.cor,weight:2,fillColor:t.cor,fillOpacity:.55,dashArray:null});cl.on('click',()=>abreItem(it));cl.addTo(camada)}
+    const ce=rotulo(it);
+    const lb=L.marker(ll(ce),{icon:L.divIcon({className:'lbl',html:`<span class="${it.ok?'ok':''}" style="background:${t.cor}">${it.n}</span>`,iconSize:[0,0]}),interactive:true});
+    lb.on('click',()=>abreItem(it));lb.addTo(camada);LAYERS[it.id]=lay;
+  }
+  if(!mapaPronto){mapaPronto=true;if(!desenha.ja||desenha.ja!==PROJ.id){desenha.ja=PROJ.id;enquadra()}}
+}
+function enquadra(){if(camada&&camada.getLayers().length)MAP.fitBounds(camada.getBounds(),{padding:[30,30]})}
+function focaItem(it){const l=LAYERS[it.id];if(!l)return;if(l.getBounds)MAP.fitBounds(l.getBounds(),{padding:[60,60],maxZoom:20});else MAP.setView(l.getLatLng(),19)}
+function gps(){
+  const b=$('#bGps');
+  if(gpsW!=null){navigator.geolocation.clearWatch(gpsW);gpsW=null;if(gpsM){gpsM.remove();gpsM=null}b.classList.remove('on');return}
+  if(!navigator.geolocation){toast('GPS indisponível neste navegador');return}
+  b.classList.add('on');toast('Buscando posição…');let primeiro=true;
+  try{gpsW=navigator.geolocation.watchPosition(p=>{const c=[p.coords.latitude,p.coords.longitude];
+    if(!gpsM){gpsM=L.featureGroup([L.circle(c,{radius:p.coords.accuracy,color:'#2563eb',weight:1,fillOpacity:.12}),L.circleMarker(c,{radius:7,color:'#fff',weight:2,fillColor:'#2563eb',fillOpacity:1})]).addTo(MAP)}
+    else{const [ci,pt]=gpsM.getLayers();ci.setLatLng(c).setRadius(p.coords.accuracy);pt.setLatLng(c)}
+    if(primeiro){primeiro=false;MAP.setView(c,Math.max(MAP.getZoom(),17));toast(`Precisão ±${Math.round(p.coords.accuracy)} m`)}
+  },err=>{toast('GPS bloqueado ou indisponível aqui ('+err.message+')',4000);b.classList.remove('on');gpsW=null},{enableHighAccuracy:true,maximumAge:5000,timeout:30000})}catch(e){toast('GPS bloqueado nesta visualização');b.classList.remove('on')}
+}
+
+/* ============ exportação ============ */
+const NA_CLAUDE=typeof window.claude==='object'&&window.claude&&typeof window.claude.use==='function';
+let DL=null;if(NA_CLAUDE){window.claude.use('downloads').then(d=>DL=d).catch(()=>{})}
+const PERMITIDAS=['txt','json','csv','html','pdf','xlsx','zip','jpg','png','svg'];
+async function baixa(nome,blob){
+  if(NA_CLAUDE){
+    if(!DL){toast('Download indisponível nesta visualização',4000);return}
+    let ext=nome.split('.').pop().toLowerCase();
+    if(!PERMITIDAS.includes(ext)){blob=zip([{name:nome,data:new Uint8Array(await blob.arrayBuffer())}]);nome=nome+'.zip';toast('Arquivo entregue dentro de um .zip')}
+    try{await DL.save({filename:nome,data:blob})}catch(e){if(e&&e.code!=='declined')toast('Não foi possível baixar: '+(e.message||e.code),4000)}
+    return;
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);
+}
+const slug=s=>norm(s).replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,50)||'pericia';
+const xe=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function kmlCor(hex,a){const h=hex.replace('#','');return a+h.slice(4,6)+h.slice(2,4)+h.slice(0,2)}
+function itensOrd(){return PROJ.itens.slice().sort((a,b)=>a.n-b.n)}
+function linhaPlan(it){
+  const k=it.kml||{},c=it.campo||{},a=adotada(it),ce=centro(it);
+  return {n:it.n,nome:it.nome,tipo:TIPO[it.tipo].nome,geo:{Polygon:'Polígono',LineString:'Linha',Point:'Ponto',None:'Campo'}[it.g],pasta:it.pasta,
+   areaK:k.area??null,perK:k.perim??null,dimK:k.comp?`${fmt(k.comp)} x ${fmt(k.larg)}`:'',lenK:k.len??null,
+   compC:c.comp??null,largC:c.larg??null,areaC:c.area??(c.comp!=null&&c.larg!=null&&it.g!=='LineString'?c.comp*c.larg:null),alt:c.alt??null,
+   adot:a.v,un:a.u,fonte:a.src||'',dif:difPct(a),cons:it.conserv,pad:it.padrao,obs:[it.obs,c.fios?'Fios: '+c.fios:'',c.esp?'Esp. mourões: '+fmt(c.esp)+' m':''].filter(Boolean).join(' | '),
+   fotos:it.fotos.length,ok:it.ok?'Sim':'Não',lat:ce?ce[1]:null,lon:ce?ce[0]:null,
+   formato:it.g==='Polygon'||c.formato?FORMATOS[formatoDe(it)]:'',diam:c.diam??null,lances:c.lances??null,linK:it.tipo==='curral'?linKmlCurral(it).tot:null,comps:it.tipo==='curral'?[['tronco','Tronco'],['balanca','Balança'],['embarc','Embarcadouro'],['seringa','Seringa'],['port','Porteira']].filter(([k])=>c[k]).map(([k,n])=>c[k]+' '+n.toLowerCase()+(c[k]>1?(n==='Balança'?'s':'s'):'')).concat(c.brete?['brete '+fmt(c.brete)+' m']:[]).join(', '):'',nPal:c.nPal??null,espPal:c.espPal??null,reguas:c.reguas??null,port:c.port??null,madeira:c.madeira||'',lin:it.tipo==='curral'?linCurral(it).L:null,regLin:it.tipo==='curral'?linCurral(it).reg:null,
+   cobK:it.cob?it.cob.kml.area??null:null,cobA:it.cob?cobAdot(it.cob).v:null,cobF:it.cob?cobAdot(it.cob).src:'',cobTipo:it.cob?it.cob.tipo||'':'',cobAlt:it.cob?it.cob.alt??null:null};
+}
+async function geraKml(comFotos){
+  const fotos=[];
+  const porTipo={};itensOrd().forEach(it=>{if(it.g!=='None'&&it.c.length)(porTipo[it.tipo]=porTipo[it.tipo]||[]).push(it)});
+  let x=`<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${xe(PROJ.nome)}</name><description>${xe([PROJ.processo,PROJ.municipio,'Conferido em campo por '+PROJ.perito+' – '+PROJ.crea+' em '+hoje()].filter(Boolean).join(' · '))}</description>\n`;
+  for(const t of TIPOS)x+=`<Style id="t_${t.k}"><LineStyle><color>${kmlCor(t.cor,'ff')}</color><width>2.5</width></LineStyle><PolyStyle><color>${kmlCor(t.cor,GRANDES.has(t.k)?'22':'66')}</color></PolyStyle><IconStyle><color>${kmlCor(t.cor,'ff')}</color><Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle></Style>\n`;
+  for(const [tk,its] of Object.entries(porTipo)){
+    x+=`<Folder><name>${xe(TIPO[tk].nome)}</name>\n`;
+    for(const it of its){
+      const r=linhaPlan(it);let im='';
+      if(comFotos)for(const [i,id] of it.fotos.entries()){const b=await DB.getF(id);if(!b)continue;const nm=`fotos/${String(it.n).padStart(3,'0')}_${i+1}.jpg`;fotos.push({name:nm,data:new Uint8Array(await b.arrayBuffer())});im+=`<img src="${nm}" width="420"><br>`}
+      const desc=`<table border="1" cellpadding="3" style="border-collapse:collapse">
+<tr><td>Tipo</td><td>${xe(r.tipo)}</td></tr>${r.areaK!=null?`<tr><td>Área KML</td><td>${fmt(r.areaK)} m²</td></tr><tr><td>Perímetro KML</td><td>${fmt(r.perK)} m</td></tr>`:''}${r.lenK!=null?`<tr><td>Comprimento KML</td><td>${fmt(r.lenK)} m</td></tr>`:''}
+${r.compC!=null?`<tr><td>Comp. campo</td><td>${fmt(r.compC)} m</td></tr>`:''}${r.largC!=null?`<tr><td>Larg. campo</td><td>${fmt(r.largC)} m</td></tr>`:''}${r.alt!=null?`<tr><td>Pé-direito</td><td>${fmt(r.alt)} m</td></tr>`:''}
+${r.lances?`<tr><td>Lances</td><td>${r.lances}</td></tr>`:''}${r.comps?`<tr><td>Componentes</td><td>${xe(r.comps)}</td></tr>`:''}${r.nPal?`<tr><td>Palanques</td><td>${r.nPal} a ${fmt(r.espPal)} m${r.reguas?' · '+r.reguas+' réguas/vão':''}${r.madeira?' · '+xe(r.madeira):''}</td></tr>`:''}${r.lin!=null?`<tr><td>Compr. linear</td><td>${fmt(r.lin)} m</td></tr>`:''}<tr><td><b>Adotado</b></td><td><b>${r.adot!=null?fmt(r.adot)+' '+r.un:'—'}</b> (${r.fonte})</td></tr>${r.cons?`<tr><td>Conservação</td><td>${xe(r.cons)}</td></tr>`:''}${r.pad?`<tr><td>Padrão</td><td>${xe(r.pad)}</td></tr>`:''}${r.obs?`<tr><td>Obs.</td><td>${xe(r.obs)}</td></tr>`:''}</table><br>${im}`;
+      const ed=[['numero',r.n],['tipo',r.tipo],['area_kml_m2',r.areaK],['perimetro_kml_m',r.perK],['comprimento_kml_m',r.lenK],['comp_campo_m',r.compC],['larg_campo_m',r.largC],['area_campo_m2',r.areaC],['pe_direito_m',r.alt],['medida_adotada',r.adot],['unidade',r.un],['fonte',r.fonte],['conservacao',r.cons],['padrao',r.pad],['obs',r.obs],['conferido',r.ok]].filter(([,v])=>v!=null&&v!=='').map(([k,v])=>`<Data name="${k}"><value>${xe(typeof v==='number'?v.toFixed(2):v)}</value></Data>`).join('');
+      let g='';const cs=c=>c.map(p=>p[0].toFixed(8)+','+p[1].toFixed(8)+',0').join(' ');
+      if(it.g==='Polygon'){const cl=[...it.c,it.c[0]];g=`<Polygon><tessellate>1</tessellate><outerBoundaryIs><LinearRing><coordinates>${cs(cl)}</coordinates></LinearRing></outerBoundaryIs>${(it.holes||[]).map(h=>`<innerBoundaryIs><LinearRing><coordinates>${cs([...h,h[0]])}</coordinates></LinearRing></innerBoundaryIs>`).join('')}</Polygon>`}
+      else if(it.g==='LineString')g=`<LineString><tessellate>1</tessellate><coordinates>${cs(it.c)}</coordinates></LineString>`;
+      else g=`<Point><coordinates>${cs(it.c)}</coordinates></Point>`;
+      x+=`<Placemark><name>${xe(r.n+' - '+it.nome)}</name><styleUrl>#t_${tk}</styleUrl><description><![CDATA[${desc}]]></description><ExtendedData>${ed}</ExtendedData>${g}</Placemark>\n`;
+      for(const d of it.div||[]){const gg=d.g==='LineString'?`<LineString><tessellate>1</tessellate><coordinates>${cs(d.c)}</coordinates></LineString>`:d.g==='Polygon'?`<Polygon><outerBoundaryIs><LinearRing><coordinates>${cs([...d.c,d.c[0]])}</coordinates></LinearRing></outerBoundaryIs></Polygon>`:`<Point><coordinates>${cs(d.c)}</coordinates></Point>`;x+=`<Placemark><name>${xe(r.n+' - '+it.nome+' – '+d.nome)}</name><styleUrl>#t_${tk}</styleUrl><description>${d.g==='LineString'?fmt(d.kml.len)+' m':''}</description>${gg}</Placemark>\n`}
+      if(it.cob){const cb=it.cob,ca=cobAdot(cb);x+=`<Placemark><name>${xe(r.n+' - '+it.nome+' – parte coberta')}</name><styleUrl>#t_${tk}</styleUrl><description><![CDATA[Área coberta KML: ${fmt(cb.kml.area)} m²<br>Adotada: <b>${fmt(ca.v)} m²</b> (${ca.src})${cb.tipo?'<br>Cobertura: '+xe(cb.tipo):''}${cb.alt!=null?'<br>Pé-direito: '+fmt(cb.alt)+' m':''}]]></description><Polygon><tessellate>1</tessellate><outerBoundaryIs><LinearRing><coordinates>${cs([...cb.c,cb.c[0]])}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>\n`}
+    }
+    x+=`</Folder>\n`;
+  }
+  return {kml:x+`</Document></kml>`,fotos};
+}
+/* XLSX mínimo */
+function colL(i){let s='';i++;while(i){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26)}return s}
+function folha(cab,linhas,larg){
+  const cel=(v,r,c,st)=>{const ref=colL(c)+(r+1);if(v==null||v==='')return '';if(typeof v==='number'&&isFinite(v))return `<c r="${ref}" s="${st||2}"><v>${v}</v></c>`;return `<c r="${ref}" t="inlineStr" s="${st||0}"><is><t xml:space="preserve">${xe(v)}</t></is></c>`};
+  let rows=`<row r="1">${cab.map((h,c)=>cel(h,0,c,1)).join('')}</row>`;
+  linhas.forEach((l,r)=>{rows+=`<row r="${r+2}">${l.map((v,c)=>cel(v,r+1,c,(c===0&&typeof v==='number')?3:undefined)).join('')}</row>`});
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${larg.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${rows}</sheetData></worksheet>`;
+}
+function geraXlsx(){
+  const cab=['Nº','Benfeitoria','Tipo','Geometria','Pasta KML','Área KML (m²)','Perímetro KML (m)','Dimensões KML (m)','Compr. KML (m)','Compr. campo (m)','Larg. campo (m)','Área campo (m²)','Pé-direito (m)','Medida adotada','Unid.','Fonte','Dif. campo×KML (%)','Conservação','Padrão','Observações','Fotos','Conferido','Latitude','Longitude','Diâmetro campo (m)','Lances','Linear KML curral (m)','Componentes','Nº palanques','Dist. palanques (m)','Réguas/vão','Porteiras','Madeira','Compr. linear curral (m)','Réguas (m lin.)','Área coberta KML (m²)','Área coberta adotada (m²)','Fonte cobertura','Tipo cobertura','Pé-direito cobertura (m)','Formato','Tipologia','Idade aparente (anos)','Descrição sucinta','Divisão interna','Acabamentos'];
+  const ls=itensOrd().map(it=>{const r=linhaPlan(it);const R=v=>v==null?null:Math.round(v*100)/100;return [r.n,r.nome,r.tipo,r.geo,r.pasta,R(r.areaK),R(r.perK),r.dimK,R(r.lenK),r.compC,r.largC,R(r.areaC),r.alt,R(r.adot),r.adot==null?'':r.un,r.fonte,R(r.dif),r.cons,r.pad,r.obs,r.fotos,r.ok,r.lat!=null?+r.lat.toFixed(7):null,r.lon!=null?+r.lon.toFixed(7):null,r.diam,r.lances,R(r.linK),r.comps,r.nPal,r.espPal,r.reguas,r.port,r.madeira,R(r.lin),R(r.regLin),R(r.cobK),R(r.cobA),r.cobF,r.cobTipo,r.cobAlt,r.formato,it.tipologia||tipologiaPadrao(it),it.idade??null,it.descr||'',it.divisao||'',ACAB.filter(([k])=>(it.acab||{})[k]).map(([k,n])=>n+': '+it.acab[k]).join(' | ')]});
+  const T=totais(),tl=new Array(cab.length).fill(null);tl[1]='TOTAL DAS BENFEITORIAS (m²)';tl[2]='sem perímetro, pastagem, lavoura, RL e APP';tl[13]=Math.round(T.area*100)/100;tl[14]='m²';if(T.cob){tl[36]=Math.round(T.cob*100)/100;}ls.push(new Array(cab.length).fill(null),tl);
+  const s1=folha(cab,ls,[6,30,24,10,20,14,14,16,13,13,13,14,11,14,6,8,12,30,10,40,6,9,12,12,12,8,14,30,10,12,10,10,18,14,13,14,14,10,18,12,12,16,10,50,40,50]);
+  const res=resumo();const s2=folha(['Tipo','Quantidade','Área adotada (m²)','Área adotada (ha)','Comprimento adotado (m)'],res.map(r=>[r.nome,r.q,r.area?Math.round(r.area*100)/100:null,r.area?Math.round(r.area)/1e4:null,r.len?Math.round(r.len*100)/100:null]),[30,12,18,16,20]);
+  const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
+  const rels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const wb=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Benfeitorias" sheetId="1" r:id="rId1"/><sheet name="Resumo por tipo" sheetId="2" r:id="rId2"/></sheets></workbook>`;
+  const wbr=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  const sty=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F3D2B"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="4"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1"><alignment wrapText="1" vertical="center"/></xf><xf numFmtId="164" applyNumberFormat="1"/><xf numFmtId="1" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  return zip([{name:'[Content_Types].xml',data:ct},{name:'_rels/.rels',data:rels},{name:'xl/workbook.xml',data:wb},{name:'xl/_rels/workbook.xml.rels',data:wbr},{name:'xl/styles.xml',data:sty},{name:'xl/worksheets/sheet1.xml',data:s1},{name:'xl/worksheets/sheet2.xml',data:s2}]);
+}
+function resumo(){const m={};for(const it of PROJ.itens){const a=adotada(it),r=m[it.tipo]=m[it.tipo]||{nome:TIPO[it.tipo].nome,q:0,area:0,len:0};r.q++;if(a.v!=null){if(a.lin)r.len+=a.v;else r.area+=a.v}}return TIPOS.filter(t=>m[t.k]).map(t=>m[t.k])}
+
+/* croqui SVG */
+function croqui(itens,W,H,titulo){
+  const pts=[];itens.forEach(it=>{it.c.forEach(p=>pts.push(p))});if(!pts.length)return '';
+  const P=projDe(pts),xy=pts.map(P.f);let x0=Math.min(...xy.map(p=>p[0])),x1=Math.max(...xy.map(p=>p[0])),y0=Math.min(...xy.map(p=>p[1])),y1=Math.max(...xy.map(p=>p[1]));
+  const pad=0.06,dx=Math.max(x1-x0,10),dy=Math.max(y1-y0,10);x0-=dx*pad;x1+=dx*pad;y0-=dy*pad;y1+=dy*pad;
+  const s=Math.min(W/(x1-x0),H/(y1-y0)),ox=(W-(x1-x0)*s)/2,oy=(H-(y1-y0)*s)/2;
+  const T=p=>{const q=P.f(p);return [(ox+(q[0]-x0)*s).toFixed(1),(oy+(y1-q[1])*s).toFixed(1)]};
+  let g='',lb='';
+  const ord=itens.slice().sort((a,b)=>(GRANDES.has(b.tipo)?1:0)-(GRANDES.has(a.tipo)?1:0));
+  for(const it of ord){const t=TIPO[it.tipo];
+    if(it.g==='Polygon')g+=`<path d="${[it.c,...(it.holes||[])].map(r=>'M'+r.map(T).map(p=>p.join(',')).join('L')+'Z').join('')}" fill="${t.cor}" fill-opacity="${GRANDES.has(it.tipo)?0.08:0.35}" fill-rule="evenodd" stroke="${t.cor}" stroke-width="1.2"/>`;
+    (it.div||[]).forEach(d=>{if(d.g==='LineString')g+=`<polyline points="${d.c.map(T).map(p=>p.join(',')).join(' ')}" fill="none" stroke="${t.cor}" stroke-width="1.2"/>`;else if(d.g==='Polygon')g+=`<path d="M${d.c.map(T).map(p=>p.join(',')).join('L')}Z" fill="${t.cor}" fill-opacity=".3" stroke="${t.cor}" stroke-width="1"/>`;else{const q=T(d.c[0]);g+=`<circle cx="${q[0]}" cy="${q[1]}" r="2.5" fill="${t.cor}"/>`}});
+    if(it.cob)g+=`<path d="M${it.cob.c.map(T).map(p=>p.join(',')).join('L')}Z" fill="${t.cor}" fill-opacity="0.7" stroke="${t.cor}" stroke-width="1" stroke-dasharray="3 2"/>`;
+    if(it.g==='LineString')g+=`<polyline points="${it.c.map(T).map(p=>p.join(',')).join(' ')}" fill="none" stroke="${t.cor}" stroke-width="1.6"/>`;
+    else{const p=T(it.c[0]);g+=`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${t.cor}" stroke="#fff"/>`}
+    const c=T(rotulo(it));lb+=`<g transform="translate(${c[0]},${c[1]})"><circle r="8" fill="#fff" stroke="${t.cor}" stroke-width="1.5"/><text text-anchor="middle" dy="3.2" font-size="9" font-weight="700" fill="#111">${it.n}</text></g>`}
+  // escala
+  const alvo=(W*0.25)/s,base=Math.pow(10,Math.floor(Math.log10(alvo))),mul=[1,2,5].reduce((m,v)=>v*base<=alvo?v:m,1),L=mul*base,Lp=L*s;
+  const escala=`<g transform="translate(14,${H-16})"><rect width="${Lp/2}" height="5" fill="#111"/><rect x="${Lp/2}" width="${Lp/2}" height="5" fill="#fff" stroke="#111" stroke-width=".6"/><rect width="${Lp}" height="5" fill="none" stroke="#111" stroke-width=".6"/><text y="-3" font-size="8">0</text><text x="${Lp}" y="-3" font-size="8" text-anchor="end">${L>=1000?L/1000+' km':L+' m'}</text></g>`;
+  const norte=`<g transform="translate(${W-22},26)"><path d="M0,-16 L7,8 L0,3 L-7,8Z" fill="#111"/><text y="-19" text-anchor="middle" font-size="10" font-weight="700">N</text></g>`;
+  return `<figure class="cq"><svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif"><rect width="${W}" height="${H}" fill="#fff" stroke="#999"/>${g}${lb}${escala}${norte}</svg><figcaption>${esc0(titulo)}</figcaption></figure>`;
+}
+const esc0=esc;
+async function geraRelatorio(){
+  const its=itensOrd(),geo=its.filter(i=>i.g!=='None'&&i.c.length);
+  let cq=croqui(geo,700,560,'Croqui geral — benfeitorias numeradas conforme quadro');
+  const nuc=geo.filter(i=>!GRANDES.has(i.tipo)&&!(i.tipo==='cerca'||i.tipo==='estrada'||i.tipo==='rede'));
+  if(nuc.length>1&&nuc.length<geo.length)cq+=croqui(nuc,700,560,'Detalhe — núcleo de benfeitorias');
+  const tipos=[...new Set(geo.map(i=>i.tipo))];
+  const leg=`<div class="leg">${tipos.map(k=>`<span><i style="background:${TIPO[k].cor}"></i>${TIPO[k].nome}</span>`).join('')}</div>`;
+  const linhas=its.map(it=>{const r=linhaPlan(it);return `<tr><td class="c">${r.n}</td><td>${esc(r.nome)}<br><small>${esc(r.tipo)}</small></td><td class="n">${r.areaK!=null?fmt(r.areaK)+' m²':r.lenK!=null?fmt(r.lenK)+' m':'—'}${r.dimK?`<br><small>${r.dimK}</small>`:''}</td><td class="n">${r.compC!=null?fmt(r.compC):''}${r.largC!=null?' × '+fmt(r.largC):''}${r.areaC!=null&&r.compC==null?fmt(r.areaC)+' m²':''}${r.formato&&r.formato!=='Irregular'?`<br><small>${r.formato}</small>`:''}${r.diam!=null?`<br><small>Ø ${fmt(r.diam)} m</small>`:''}${r.alt!=null?`<br><small>pé-dir. ${fmt(r.alt)} m</small>`:''}${(r.lances||r.nPal)?`<br><small>${r.lances?r.lances+' lances':r.nPal+' palanques'} a ${fmt(r.espPal)} m${r.reguas?', '+r.reguas+' réguas':''}${r.madeira?', '+esc(r.madeira):''}${r.lin!=null?' = '+fmt(r.lin)+' m lin.':''}</small>`:''}${r.comps?`<br><small>${esc(r.comps)}</small>`:''}${r.cobA!=null?`<br><small>coberta: ${fmt(r.cobA)} m² (${r.cobF})${r.cobTipo?', '+esc(r.cobTipo):''}</small>`:''}</td><td class="n"><b>${r.adot!=null?fmt(r.adot)+' '+r.un:'—'}</b>${r.un==='m²'&&r.adot>=10000?`<br><small>${fmt(r.adot/1e4,4)} ha</small>`:''}<br><small>${r.fonte}${r.dif!=null?` (${r.dif>0?'+':''}${fmt(r.dif,1)}%)`:''}</small></td><td>${esc(r.cons.split(' – ')[0])}${r.pad?`<br><small>${esc(r.pad)}</small>`:''}</td></tr>`}).join('');
+  const res=resumo().map(r=>`<tr><td>${esc(r.nome)}</td><td class="c">${r.q}</td><td class="n">${r.area?fmt(r.area)+' m²'+(r.area>=10000?`<br><small>${fmt(r.area/1e4,4)} ha</small>`:''):''}${r.len?fmt(r.len)+' m':''}</td></tr>`).join('');
+  const du=b=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)});
+  let fichas='';
+  for(const it of its.filter(i=>!GRANDES.has(i.tipo))){
+    const a=adotada(it),c=it.campo||{},l=it.tipo==='curral'?linCurral(it):null;let fts='';
+    for(const id of it.fotos){const b=await DB.getF(id);if(b)fts+=`<figure class="pf"><img src="${await du(b)}"><figcaption>${esc((it.leg||{})[id]||'')}</figcaption></figure>`}
+    const v=x=>x==null||x===''?'':esc(String(x));
+    const area=a.v==null?'':a.lin?fmt(a.v)+' m':fmt(a.v)+'m²';
+    let rows=`<tr><th>Tipologia:</th><td>${v(it.tipologia||tipologiaPadrao(it))}</td><th>Padrão:</th><td>${v(it.padrao)}</td><th>Conservação:</th><td>${v(it.conserv)}</td></tr>
+<tr><th>I. aparente:</th><td>${it.idade!=null?it.idade+' ano(s)':''}</td><th>${a.lin?'Extensão:':'Área:'}</th><td>${area}</td><th>${c.alt!=null?'Pé-direito:':''}</th><td>${c.alt!=null?fmt(c.alt)+' m':''}</td></tr>`;
+    if(it.tipo==='curral')rows+=`<tr><th>Lances:</th><td>${v(l.vaos)}</td><th>Réguas/lance:</th><td>${v(c.reguas)}</td><th>Madeira:</th><td>${v(c.madeira)}</td></tr>
+<tr><th>Linear:</th><td>${l.L!=null?fmt(l.L)+' m':''}</td><th>Área coberta:</th><td>${it.cob?fmt(cobAdot(it.cob).v)+'m²':''}</td><th>Formato:</th><td>${FORMATOS[formatoDe(it)]}</td></tr>`;
+    fichas+=`<section class="fc"><div class="tt">PLANILHA DAS CONSTRUÇÕES</div><div class="nm">${it.n} - ${esc(it.nome)}</div>
+<div class="hd">Descrição suscinta:</div><div class="bx">${esc(it.descr||'')}</div>
+${it.divisao?`<div class="hd">Divisão interna:</div><div class="bx">${esc(it.divisao)}</div>`:''}
+<div class="hd" style="margin-top:12px">Aspectos técnicos:</div><table class="at">${rows}</table>
+${fts?`<div class="pfs">${fts}</div>`:''}</section>`;
+  }
+  const obs=its.filter(i=>i.obs||(i.campo&&i.campo.fios)).map(i=>`<p><b>${i.n} – ${esc(i.nome)}:</b> ${esc(linhaPlan(i).obs)}</p>`).join('');
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Benfeitorias – ${esc(PROJ.nome)}</title><style>
+@page{size:A4;margin:20mm 15mm 20mm 25mm}body{font:11pt/1.4 Arial,sans-serif;color:#111;max-width:180mm;margin:0 auto;padding:8px}h1{font-size:14pt;text-align:center;margin:0 0 4px}h2{font-size:12pt;margin:18px 0 6px;border-bottom:1px solid #333}
+.id{font-size:10pt;margin-bottom:8px}.id td{padding:1px 6px 1px 0;vertical-align:top}table.q{width:100%;border-collapse:collapse;font-size:9pt}table.q th,table.q td{border:1px solid #777;padding:3px 4px;vertical-align:top}table.q th{background:#e8e8e8}td.n{text-align:right;white-space:nowrap}td.c{text-align:center}small{color:#444;font-size:8pt}
+.cq{margin:8px 0;page-break-inside:avoid}.cq svg{width:100%;height:auto}figcaption{font-size:9pt;text-align:center;margin-top:3px}.leg{font-size:8.5pt;display:flex;flex-wrap:wrap;gap:4px 12px}.leg i{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:middle}
+.fts{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ft{margin:0;page-break-inside:avoid}.ft img{width:100%;height:62mm;object-fit:cover;border:1px solid #999}.nota{font-size:8.5pt;color:#333;margin-top:10px}
+.fc{page-break-before:always;font-family:Calibri,Carlito,Arial,sans-serif;font-size:10pt}.fc .tt{background:#00a038;color:#000;font-weight:700;text-align:center;font-size:12pt;padding:2px;border:2px solid #9fd88f}.fc .nm{border:3px solid #9fd88f;border-top:0;padding:2px 4px;font-weight:700}.fc .hd{background:#00a038;font-weight:700;padding:1px 4px;border:2px solid #9fd88f;margin-top:16px}.fc .bx{border:1px solid #222;border-top:0;padding:10px 4px;min-height:34px}
+.fc table.at{width:100%;border-collapse:collapse;border:2px solid #9fd88f}.fc .at th{background:#00a038;text-align:right;padding:1px 4px;white-space:nowrap;width:14%;font-weight:700}.fc .at td{border:1px solid #9fd88f;padding:1px 6px;width:19%}
+.pfs{display:grid;grid-template-columns:1fr 1fr;gap:10mm 12mm;margin-top:10mm}.pf{margin:0;border:1.5px solid #000;page-break-inside:avoid}.pf img{display:block;width:100%;height:58mm;object-fit:cover;border-bottom:1.5px solid #000}.pf figcaption{font-size:11pt;margin:2px 0;text-align:center}
+</style></head><body>
+<h1>LEVANTAMENTO DE BENFEITORIAS</h1>
+<table class="id"><tr><td><b>Imóvel:</b></td><td>${esc(PROJ.nome)}</td></tr>${PROJ.processo?`<tr><td><b>Processo:</b></td><td>${esc(PROJ.processo)}</td></tr>`:''}${PROJ.municipio?`<tr><td><b>Município:</b></td><td>${esc(PROJ.municipio)}</td></tr>`:''}<tr><td><b>Responsável:</b></td><td>${esc(PROJ.perito)} – ${esc(PROJ.crea)}</td></tr><tr><td><b>Data:</b></td><td>${hoje()}</td></tr></table>
+<h2>1. Croqui de localização</h2>${cq}${leg}
+<h2>2. Quadro de benfeitorias</h2>
+<table class="q"><thead><tr><th>Nº</th><th>Benfeitoria</th><th>KML</th><th>Campo (m)</th><th>Adotado</th><th>Conserv./Padrão</th></tr></thead><tbody>${linhas}</tbody><tfoot>${(()=>{const t=totais();return `<tr><td colspan="4"><b>TOTAL DAS BENFEITORIAS</b><br><small>exceto perímetro, pastagem, lavoura, reserva legal e APP</small></td><td class="n"><b>${fmt(t.area)} m²</b>${t.cob?`<br><small>coberta de currais: ${fmt(t.cob)} m²</small>`:''}</td><td>${t.cerca?`<small>cercas: ${fmt(t.cerca)} m</small>`:''}</td></tr>`})()}</tfoot></table>
+<h2>3. Resumo por tipo</h2><table class="q"><thead><tr><th>Tipo</th><th>Qtde</th><th>Total adotado</th></tr></thead><tbody>${res}</tbody></table>
+${obs?`<h2>4. Observações de campo</h2>${obs}`:''}
+${fichas}
+<p class="nota">Medidas KML calculadas em projeção plana topocêntrica local sobre o elipsoide WGS 84, a partir das geometrias de ${esc(PROJ.arquivo||'arquivo KML')}. Medidas de campo obtidas com trena. Medida adotada: campo quando informada; caso contrário, KML. </p>
+</body></html>`;
+}
+async function backup(){
+  const fotos={};for(const it of PROJ.itens)for(const id of it.fotos){const b=await DB.getF(id);if(b)fotos[id]=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)})}
+  return new Blob([JSON.stringify({app:'benfeitorias-campo',versao:1,data:new Date().toISOString(),projeto:PROJ,fotos})],{type:'application/json'});
+}
+function exportTela(){
+  const res=resumo(),ok=PROJ.itens.filter(i=>i.ok).length,pend=PROJ.itens.length-ok;
+  $('#vExp').innerHTML=`<div class="card"><b>${esc(PROJ.nome)}</b><div class="muted">${esc(PROJ.processo||'')} ${PROJ.municipio?'· '+esc(PROJ.municipio):''}</div>
+   <div class="muted" style="margin-top:4px">${PROJ.itens.length} itens · ${ok} conferidos${pend?` · <b style="color:var(--alerta)">${pend} pendentes</b>`:''}</div></div>
+   ${(()=>{const t=totais();return `<div class="card" style="background:var(--verde);color:#fff;border:0"><div style="font-size:13px;opacity:.85">Total das benfeitorias</div><div style="font-size:24px;font-weight:700">${fmt(t.area)} m²</div>${t.cob?`<div style="font-size:14px">Coberta de currais: ${fmt(t.cob)} m²</div>`:''}</div>`})()}
+   <h2>Resumo por tipo</h2><div class="card" style="padding:4px 10px"><table class="tab">${res.map(r=>`<tr><td>${r.nome}</td><td class="n">${r.q}</td><td class="n">${r.area?fmtArea(r.area):''}${r.len?fmt(r.len)+' m':''}</td></tr>`).join('')}</table></div>
+   <h2>Exportar</h2><div class="exp">
+   <button class="btn full" data-x="pdf">📄 Relatório com croqui e fotos</button>
+   <button class="btn sec full" data-x="xlsx">📊 Planilha de benfeitorias (.xlsx)</button>
+   <button class="btn sec full" data-x="kmz">🌎 KMZ ajustado com fotos</button>
+   <button class="btn sec full" data-x="kml">🌎 KML ajustado (sem fotos)</button>
+   <button class="btn sec full" data-x="bak">💾 Backup completo (.json)</button></div>
+   <p class="muted">${NA_CLAUDE?'Nesta visualização o relatório é baixado em .html: abra e use Imprimir → Salvar como PDF. KML/KMZ chegam dentro de um .zip.':'O relatório abre pronto para imprimir: escolha “Salvar como PDF”.'} O backup leva a perícia e as fotos para outro aparelho.</p>`;
+  $('#vExp').querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>exporta(b.dataset.x));
+}
+async function exporta(t){
+  const nm=slug(PROJ.nome)+'_benfeitorias';
+  try{
+    if(t==='xlsx')return baixa(nm+'.xlsx',geraXlsx());
+    if(t==='kml'){const r=await geraKml(false);return baixa(nm+'.kml',new Blob([r.kml],{type:'application/vnd.google-earth.kml+xml'}))}
+    if(t==='kmz'){toast('Montando KMZ…');const r=await geraKml(true);return baixa(nm+'.kmz',zip([{name:'doc.kml',data:r.kml},...r.fotos]))}
+    if(t==='bak'){toast('Gerando backup…');return baixa(nm+'_backup.json',await backup())}
+    if(t==='pdf'){
+      let w=null;if(!NA_CLAUDE){try{w=window.open('','_blank')}catch(e){}}
+      toast('Montando relatório…');const html=await geraRelatorio();
+      if(w){w.document.open();w.document.write(html);w.document.close();setTimeout(()=>{try{w.focus();w.print()}catch(e){}},700)}
+      else baixa(nm+'_relatorio.html',new Blob([html],{type:'text/html'}));
+    }
+  }catch(e){toast('Erro: '+e.message,4000)}
+}
+
+/* ============ modal ============ */
+function modal(html){const m=$('#modal');m.querySelector('.caixa').innerHTML=html;m.classList.add('on')}
+function fechaModal(){$('#modal').classList.remove('on')}
+function confirma(msg,fn){modal(`<h3>Confirmar</h3><p>${esc(msg)}</p><div class="acoes"><button class="btn sec" id="cN">Cancelar</button><button class="btn perigo" id="cS">Confirmar</button></div>`);$('#cN').onclick=fechaModal;$('#cS').onclick=async()=>{fechaModal();await fn()}}
+$('#modal').onclick=e=>{if(e.target.id==='modal')fechaModal()};
+
+/* ============ arrastar e soltar (computador) ============ */
+let dragN=0;
+addEventListener('dragenter',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){dragN++;$('#drop').classList.add('on')}});
+addEventListener('dragleave',()=>{if(--dragN<=0){dragN=0;$('#drop').classList.remove('on')}});
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();dragN=0;$('#drop').classList.remove('on');const fs=[...(e.dataTransfer.files||[])];if(!fs.length)return;
+  if(ITEM&&fs.every(f=>/^image\//.test(f.type))){const dt=$('#fFoto');reduzVarias(fs);return}
+  importa(fs[0])});
+async function reduzVarias(fs){for(const f of fs){try{const b=await reduzFoto(f),id=uid();await DB.putF(id,b);ITEM.fotos.push(id)}catch(err){toast(err.message)}}salva();fotosItem()}
+
+/* ============ início ============ */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>mostra(b.dataset.v));
+$('#bVoltar').onclick=()=>{PROJ=null;mostra('vHome')};
+$('#bMenu').onclick=()=>dadosProjeto(PROJ,false);
+(async()=>{await DB.open();try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}home();
+  if(!NA_CLAUDE&&'serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}})();
+</script>
+</body>
+</html>
