@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Fazenda Perímetro Numérico</name>
+<Placemark><name>Galpão</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-54.620095835,-20.450054196,0 -54.619904165,-20.450054196,0 -54.619904165,-20.449945804,0 -54.620095835,-20.449945804,0 -54.620095835,-20.450054196,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+<Placemark><name>Casa 01</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-54.620455214,-20.449954837,0 -54.620311462,-20.449954837,0 -54.620311462,-20.449864511,0 -54.620455214,-20.449864511,0 -54.620455214,-20.449954837,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+<Placemark><name>Casa 02</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-54.619664579,-20.450307109,0 -54.619568745,-20.450307109,0 -54.619568745,-20.450234848,0 -54.619664579,-20.450234848,0 -54.619664579,-20.450307109,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+<Placemark><name>20.00</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-54.622395864,-20.451806522,0 -54.617604136,-20.451806522,0 -54.617604136,-20.448193478,0 -54.622395864,-20.448193478,0 -54.622395864,-20.451806522,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+</Document></kml>

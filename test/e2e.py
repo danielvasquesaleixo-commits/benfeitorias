@@ -42,6 +42,13 @@ async def main():
     rp = await pp.value; await rp.wait_for_timeout(1000)
     open(os.path.join(O,'relatorio.html'),'w',encoding='utf-8').write(await rp.content())
     await rp.emulate_media(media='print'); await rp.pdf(path=os.path.join(O,'relatorio.pdf'), format='A4', print_background=True)
+    # perímetro com nome só numérico ("20.00"): reconhecido como perímetro e fora do total
+    await pg.click('#bVoltar'); await pg.wait_for_timeout(300)
+    await pg.set_input_files('#fKml', os.path.join(R, 'test/fixtures/teste_perimetro_numerico.kml')); await pg.wait_for_timeout(500)
+    await pg.click('#mOk'); await pg.wait_for_timeout(300)
+    tot = await pg.locator('.card:has-text("Total das benfeitorias"):visible').inner_text(); print('total perímetro numérico:', ' '.join(tot.split()))
+    assert '3 itens' in tot and '470,00 m²' in tot, tot  # 240 + 150 + 80
+    assert 'Perímetro do imóvel' in await pg.locator('.item:has-text("20.00")').inner_text()
     print('erros JS:', errs); assert not errs
     await b.close()
 asyncio.run(main())

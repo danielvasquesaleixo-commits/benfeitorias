@@ -29,5 +29,14 @@ k=f'''<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/k
 {pm('Cerca divisa sul',f'<LineString><coordinates>{line}</coordinates></LineString>')}
 {pm('Perímetro do imóvel',poly(rect(0,0,500,400)))}
 </Document></kml>'''
-open(os.path.join(os.path.dirname(__file__),'teste.kml'),'w').write(k)
+open(os.path.join(os.path.dirname(__file__),'teste.kml'),'w',encoding='utf-8').write(k)
 with zipfile.ZipFile(os.path.join(os.path.dirname(__file__),'teste.kmz'),'w',zipfile.ZIP_DEFLATED) as z: z.writestr('doc.kml',k)
+
+# perímetro com nome só numérico (a área em ha, como sai do Google Earth às vezes): deve ser reconhecido e ficar fora do total
+k2=f'''<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Fazenda Perímetro Numérico</name>
+{pm('Galpão',poly(rect(0,0,20,12)))}
+{pm('Casa 01',poly(rect(-40,10,15,10)))}
+{pm('Casa 02',poly(rect(40,-30,10,8)))}
+{pm('20.00',poly(rect(0,0,500,400)))}
+</Document></kml>'''
+open(os.path.join(os.path.dirname(__file__),'teste_perimetro_numerico.kml'),'w',encoding='utf-8').write(k2)

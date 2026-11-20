@@ -212,6 +212,14 @@ const COB_OK=new Set(['curral','galpao','outros','estabulo']);
 const CIRC=new Set(['curral','silo','represa','agua']);
 const COMP_RE=/seringa|tronco|brete|embarc|balanc|cocho|bebedour|apartad|porteir/;
 function meio(x){if(x.g!=='LineString')return centro(x);const P=projDe(x.c),r=x.c.map(P.f);let L=0;const d=[0];for(let i=1;i<r.length;i++){L+=dist(r[i-1],r[i]);d.push(L)}for(let i=1;i<r.length;i++)if(d[i]>=L/2){const t=(L/2-d[i-1])/((d[i]-d[i-1])||1);return P.inv([r[i-1][0]+(r[i][0]-r[i-1][0])*t,r[i-1][1]+(r[i][1]-r[i-1][1])*t])}return x.c[0]}
+// Perímetro sem nome reconhecível (ex.: "1578.34", a área em ha): polígono "Outros" de 5 ha ou mais
+// cujo nome é só um número, ou que envolve pelo menos metade das outras geometrias → vira "Perímetro do imóvel"
+function autoPerimetro(itens){let n=0;
+  for(const it of itens){if(it.g!=='Polygon'||it.tipo!=='outros'||((it.kml||{}).area||0)<50000)continue;
+    const outros=itens.filter(x=>x!==it&&x.c&&x.c.length),dent=outros.filter(x=>dentro(meio(x),it.c)).length;
+    const numerico=/^\s*[\d.,]+\s*(ha|m2|m²)?\s*$/i.test(it.nome||'');
+    if(numerico||(outros.length>=2&&dent>=outros.length/2)){it.tipo='perimetro';n++}}
+  return n}
 function dentroCurral(cur,x){return x!==cur&&!x.cob&&!(x.div&&x.div.length)&&dentro(meio(x),cur.c)&&!(x.g==='Polygon'&&((x.kml||{}).area||0)>=((cur.kml||{}).area||0))}
 function candidatosCob(cur,itens){return itens.filter(x=>x.g==='Polygon'&&COB_OK.has(x.tipo)&&!COMP_RE.test(norm(x.nome))&&dentroCurral(cur,x))}
 function candidatosInt(cur,itens){return itens.filter(x=>dentroCurral(cur,x)&&(x.g==='LineString'?!['estrada','rede'].includes(x.tipo):true))}
@@ -349,7 +357,7 @@ async function home(){
    ${!DB.db?'<div class="card" style="border-color:var(--alerta)"><b>Atenção:</b> <span class="muted">o armazenamento do navegador não está disponível aqui. Os dados ficam só enquanto a página estiver aberta — faça backup antes de fechar.</span></div>':''}
    <h2>Perícias</h2>
    ${ps.length?ps.map(p=>{const n=p.itens.length,ok=p.itens.filter(i=>i.ok).length;return `<div class="card proj" data-id="${p.id}"><div class="info"><b>${esc(p.nome)}</b><span class="muted">${esc(p.processo||'sem nº de processo')} · ${n} itens · ${ok} conferidos</span><div class="barra"><i style="width:${n?ok/n*100:0}%"></i></div></div><span style="font-size:22px;color:var(--sub)">›</span></div>`}).join(''):'<div class="vazio"><div class="ico">🗺️</div>Nenhuma perícia ainda.</div>'}`;
-  el.querySelectorAll('.proj').forEach(c=>c.onclick=async()=>{PROJ=(await DB.all()).find(p=>p.id===c.dataset.id);mapaPronto=false;mostra('vLista')});
+  el.querySelectorAll('.proj').forEach(c=>c.onclick=async()=>{PROJ=(await DB.all()).find(p=>p.id===c.dataset.id);if(autoPerimetro(PROJ.itens)){salva();toast('Perímetro do imóvel identificado e retirado do total das benfeitorias',3500)}mapaPronto=false;mostra('vLista')});
 }
 function erro(msg){modal(`<h3>Não foi possível ler o arquivo</h3><p>${esc(msg)}</p><p class="muted">Confira se é um .kml ou .kmz exportado do Google Earth (Salvar lugar como…). Se o erro continuar, envie o arquivo no chat.</p><div class="acoes"><button class="btn" id="eOk">OK</button></div>`);$('#eOk').onclick=fechaModal}
 $('#fKml').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)importa(f)};
@@ -358,7 +366,7 @@ async function importa(f){
   toast('Lendo '+f.name+'…');
   try{
     const r=await lerArquivoGeo(f);if(!r.itens.length)throw new Error('Nenhuma geometria encontrada no arquivo');
-    r.itens.forEach(it=>{it.kml=mede(it)});autoCob(r.itens);r.itens.forEach((it,i)=>it.n=i+1);
+    r.itens.forEach(it=>{it.kml=mede(it)});if(autoPerimetro(r.itens))setTimeout(()=>toast('Perímetro do imóvel identificado e retirado do total das benfeitorias',3500),4000);autoCob(r.itens);r.itens.forEach((it,i)=>it.n=i+1);
     const nCob=r.itens.filter(i=>i.cob).length,nDiv=r.itens.reduce((t,i)=>t+(i.div||[]).length,0);if(nCob||nDiv)setTimeout(()=>toast(`Curral: ${nCob} cobertura(s) e ${nDiv} divisão(ões)/componente(s) agrupados`,3500),400);
     const pd=PADRAO_PERITO();
     const p={id:uid(),nome:r.nomeDoc||f.name.replace(/\.km[lz]$/i,''),processo:'',municipio:'',perito:pd.perito,crea:pd.crea,arquivo:f.name,criado:Date.now(),itens:r.itens};
@@ -414,7 +422,7 @@ function lista(){
    <div class="row" style="margin-bottom:10px"><input id="busca" placeholder="Buscar nome ou nº" value="${esc(BUSCA)}" style="flex:1;padding:10px 12px;border:1px solid var(--linha);border-radius:9px">
     <select id="ftipo" style="max-width:45%;padding:10px;border:1px solid var(--linha);border-radius:9px;background:#fff"><option value="">Todos os tipos</option>${tiposUsados.map(k=>`<option value="${k}" ${FTIPO===k?'selected':''}>${TIPO[k].nome}</option>`).join('')}</select></div>
    ${fil.map(it=>`<div class="card item" data-id="${it.id}"><div class="num" style="background:${TIPO[it.tipo].cor}">${it.n}</div><div class="info"><div class="nome">${esc(it.nome)}</div><div class="muted">${TIPO[it.tipo].nome}</div><div class="med">${linhaMedidas(it)}</div></div><div class="check ${it.ok?'on':''}" data-ok="${it.id}">✓</div></div>`).join('')||'<div class="vazio">Nada neste filtro.</div>'}
-   ${(()=>{const t=totais();return `<div class="card" style="background:var(--verde);color:#fff;border:0"><div style="font-size:13px;opacity:.85">Total das benfeitorias (${t.n} itens, sem perímetro, pastagem, lavoura, RL e APP)</div><div style="font-size:24px;font-weight:700">${fmt(t.area)} m²</div>${t.cob?`<div style="font-size:14px;opacity:.9">Área coberta de currais: ${fmt(t.cob)} m² (já incluída no curral)</div>`:''}${t.cerca?`<div style="font-size:14px;opacity:.9">Cercas: ${fmt(t.cerca)} m</div>`:''}</div>`})()}
+   ${(()=>{const t=totais();return `<div class="card" style="background:var(--verde);color:#fff;border:0"><div style="font-size:13px;opacity:.85">Total das benfeitorias não reprodutivas (${t.n} itens; fora perímetro, pastagem, lavoura, RL e APP)</div><div style="font-size:24px;font-weight:700">${fmt(t.area)} m²</div>${t.cob?`<div style="font-size:14px;opacity:.9">Área coberta de currais: ${fmt(t.cob)} m² (já incluída no curral)</div>`:''}${t.cerca?`<div style="font-size:14px;opacity:.9">Cercas: ${fmt(t.cerca)} m</div>`:''}</div>`})()}
    <button class="btn sec full" id="bNovo">＋ Benfeitoria encontrada em campo</button>`;
   el.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{FILTRO=b.dataset.f;lista()});
   $('#ftipo').onchange=e=>{FTIPO=e.target.value;lista()};
@@ -701,7 +709,7 @@ function folha(cab,linhas,larg){
 function geraXlsx(){
   const cab=['Nº','Benfeitoria','Tipo','Geometria','Pasta KML','Área KML (m²)','Perímetro KML (m)','Dimensões KML (m)','Compr. KML (m)','Compr. campo (m)','Larg. campo (m)','Área campo (m²)','Pé-direito (m)','Medida adotada','Unid.','Fonte','Dif. campo×KML (%)','Conservação','Padrão','Observações','Fotos','Conferido','Latitude','Longitude','Diâmetro campo (m)','Lances','Linear KML curral (m)','Componentes','Nº palanques','Dist. palanques (m)','Réguas/vão','Porteiras','Madeira','Compr. linear curral (m)','Réguas (m lin.)','Área coberta KML (m²)','Área coberta adotada (m²)','Fonte cobertura','Tipo cobertura','Pé-direito cobertura (m)','Formato','Tipologia','Idade aparente (anos)','Descrição sucinta','Divisão interna','Acabamentos'];
   const ls=itensOrd().map(it=>{const r=linhaPlan(it);const R=v=>v==null?null:Math.round(v*100)/100;return [r.n,r.nome,r.tipo,r.geo,r.pasta,R(r.areaK),R(r.perK),r.dimK,R(r.lenK),r.compC,r.largC,R(r.areaC),r.alt,R(r.adot),r.adot==null?'':r.un,r.fonte,R(r.dif),r.cons,r.pad,r.obs,r.fotos,r.ok,r.lat!=null?+r.lat.toFixed(7):null,r.lon!=null?+r.lon.toFixed(7):null,r.diam,r.lances,R(r.linK),r.comps,r.nPal,r.espPal,r.reguas,r.port,r.madeira,R(r.lin),R(r.regLin),R(r.cobK),R(r.cobA),r.cobF,r.cobTipo,r.cobAlt,r.formato,it.tipologia||tipologiaPadrao(it),it.idade??null,it.descr||'',it.divisao||'',ACAB.filter(([k])=>(it.acab||{})[k]).map(([k,n])=>n+': '+it.acab[k]).join(' | ')]});
-  const T=totais(),tl=new Array(cab.length).fill(null);tl[1]='TOTAL DAS BENFEITORIAS (m²)';tl[2]='sem perímetro, pastagem, lavoura, RL e APP';tl[13]=Math.round(T.area*100)/100;tl[14]='m²';if(T.cob){tl[36]=Math.round(T.cob*100)/100;}ls.push(new Array(cab.length).fill(null),tl);
+  const T=totais(),tl=new Array(cab.length).fill(null);tl[1]='TOTAL DAS BENFEITORIAS NÃO REPRODUTIVAS (m²)';tl[2]='sem perímetro, pastagem, lavoura, RL e APP';tl[13]=Math.round(T.area*100)/100;tl[14]='m²';if(T.cob){tl[36]=Math.round(T.cob*100)/100;}ls.push(new Array(cab.length).fill(null),tl);
   const s1=folha(cab,ls,[6,30,24,10,20,14,14,16,13,13,13,14,11,14,6,8,12,30,10,40,6,9,12,12,12,8,14,30,10,12,10,10,18,14,13,14,14,10,18,12,12,16,10,50,40,50]);
   const res=resumo();const s2=folha(['Tipo','Quantidade','Área adotada (m²)','Área adotada (ha)','Comprimento adotado (m)'],res.map(r=>[r.nome,r.q,r.area?Math.round(r.area*100)/100:null,r.area?Math.round(r.area)/1e4:null,r.len?Math.round(r.len*100)/100:null]),[30,12,18,16,20]);
   const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
@@ -776,7 +784,7 @@ ${fts?`<div class="pfs">${fts}</div>`:''}</section>`;
 <table class="id"><tr><td><b>Imóvel:</b></td><td>${esc(PROJ.nome)}</td></tr>${PROJ.processo?`<tr><td><b>Processo:</b></td><td>${esc(PROJ.processo)}</td></tr>`:''}${PROJ.municipio?`<tr><td><b>Município:</b></td><td>${esc(PROJ.municipio)}</td></tr>`:''}<tr><td><b>Responsável:</b></td><td>${esc(PROJ.perito)} – ${esc(PROJ.crea)}</td></tr><tr><td><b>Data:</b></td><td>${hoje()}</td></tr></table>
 <h2>1. Croqui de localização</h2>${cq}${leg}
 <h2>2. Quadro de benfeitorias</h2>
-<table class="q"><thead><tr><th>Nº</th><th>Benfeitoria</th><th>KML</th><th>Campo (m)</th><th>Adotado</th><th>Conserv./Padrão</th></tr></thead><tbody>${linhas}</tbody><tfoot>${(()=>{const t=totais();return `<tr><td colspan="4"><b>TOTAL DAS BENFEITORIAS</b><br><small>exceto perímetro, pastagem, lavoura, reserva legal e APP</small></td><td class="n"><b>${fmt(t.area)} m²</b>${t.cob?`<br><small>coberta de currais: ${fmt(t.cob)} m²</small>`:''}</td><td>${t.cerca?`<small>cercas: ${fmt(t.cerca)} m</small>`:''}</td></tr>`})()}</tfoot></table>
+<table class="q"><thead><tr><th>Nº</th><th>Benfeitoria</th><th>KML</th><th>Campo (m)</th><th>Adotado</th><th>Conserv./Padrão</th></tr></thead><tbody>${linhas}</tbody><tfoot>${(()=>{const t=totais();return `<tr><td colspan="4"><b>TOTAL DAS BENFEITORIAS NÃO REPRODUTIVAS</b><br><small>exceto perímetro, pastagem, lavoura, reserva legal e APP</small></td><td class="n"><b>${fmt(t.area)} m²</b>${t.cob?`<br><small>coberta de currais: ${fmt(t.cob)} m²</small>`:''}</td><td>${t.cerca?`<small>cercas: ${fmt(t.cerca)} m</small>`:''}</td></tr>`})()}</tfoot></table>
 <h2>3. Resumo por tipo</h2><table class="q"><thead><tr><th>Tipo</th><th>Qtde</th><th>Total adotado</th></tr></thead><tbody>${res}</tbody></table>
 ${obs?`<h2>4. Observações de campo</h2>${obs}`:''}
 ${fichas}
@@ -791,7 +799,7 @@ function exportTela(){
   const res=resumo(),ok=PROJ.itens.filter(i=>i.ok).length,pend=PROJ.itens.length-ok;
   $('#vExp').innerHTML=`<div class="card"><b>${esc(PROJ.nome)}</b><div class="muted">${esc(PROJ.processo||'')} ${PROJ.municipio?'· '+esc(PROJ.municipio):''}</div>
    <div class="muted" style="margin-top:4px">${PROJ.itens.length} itens · ${ok} conferidos${pend?` · <b style="color:var(--alerta)">${pend} pendentes</b>`:''}</div></div>
-   ${(()=>{const t=totais();return `<div class="card" style="background:var(--verde);color:#fff;border:0"><div style="font-size:13px;opacity:.85">Total das benfeitorias</div><div style="font-size:24px;font-weight:700">${fmt(t.area)} m²</div>${t.cob?`<div style="font-size:14px">Coberta de currais: ${fmt(t.cob)} m²</div>`:''}</div>`})()}
+   ${(()=>{const t=totais();return `<div class="card" style="background:var(--verde);color:#fff;border:0"><div style="font-size:13px;opacity:.85">Total das benfeitorias não reprodutivas</div><div style="font-size:24px;font-weight:700">${fmt(t.area)} m²</div>${t.cob?`<div style="font-size:14px">Coberta de currais: ${fmt(t.cob)} m²</div>`:''}</div>`})()}
    <h2>Resumo por tipo</h2><div class="card" style="padding:4px 10px"><table class="tab">${res.map(r=>`<tr><td>${r.nome}</td><td class="n">${r.q}</td><td class="n">${r.area?fmtArea(r.area):''}${r.len?fmt(r.len)+' m':''}</td></tr>`).join('')}</table></div>
    <h2>Exportar</h2><div class="exp">
    <button class="btn full" data-x="pdf">📄 Relatório com croqui e fotos</button>
