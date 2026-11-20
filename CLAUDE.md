@@ -59,6 +59,13 @@ Reproduz a "Planilha das construções" dos laudos do Daniel: faixa verde "PLANI
 - ~~Ortomosaico do drone como fundo offline do mapa~~ — descartado pelo Daniel em 20/11/2026; não propor de novo.
 - [ ] Ao lançar uma versão, troque o nome do cache em `public/sw.js` (`benfeitorias-vN`).
 
+## Legendas das fotos (feitas pelo Claude, fora do app)
+Decisão de 20/11/2026: o app **não** chama IA. Depois da vistoria, Daniel exporta o **Backup completo (.json)** e manda no chat do Claude Code. O Claude:
+1. lê o JSON `{app:'benfeitorias-campo', versao:1, data, projeto:{...itens}, fotos:{idFoto: 'data:image/jpeg;base64,...'}}`;
+2. olha cada foto (decodificar o dataURL para arquivo temporário no scratchpad) e escreve a legenda em `projeto.itens[i].leg[idFoto]`, no padrão "Vista externa", "Vista interna", "Vista aérea", "Vista da sala", "Vista da cozinha", "Vista do quarto", "Vista do banheiro", "Vista da varanda" (usar o nome/tipo do item como contexto);
+3. **não sobrescreve** legenda já preenchida; só completa as vazias; mantém todo o resto do JSON idêntico;
+4. devolve um novo .json (ex.: `<nome>_legendado.json`) para Daniel usar em **Restaurar backup**, e lista as legendas no chat para conferência.
+
 ## Convenções
 - Testar sempre com `npm test` (sem erros JS; medidas do KML de teste: galpão 20×12 = 240,00 m²; cerca 700,00 m; total das benfeitorias = soma das adotadas).
 - Contas que vão para laudo devem ser conferidas fora da IA (protocolo do Daniel).
