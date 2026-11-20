@@ -53,7 +53,8 @@ Projeto: `{id, nome, processo, municipio, perito, crea, arquivo, criado, alterad
 Reproduz a "Planilha das construções" dos laudos do Daniel: faixa verde "PLANILHA DAS CONSTRUÇÕES"; "N - Nome"; blocos "Descrição suscinta" e "Divisão interna"; "Aspectos técnicos" com Tipologia | Padrão | Conservação / I. aparente | Área (para o curral: Lances | Réguas/lance | Madeira / Linear | Área coberta | Formato); fotos 2×2 com legenda embaixo (Vista externa, Vista interna, Vista aérea…). Padrão e conservação são texto livre por enquanto (ex.: "8 - Médio", "E - Regular").
 
 ## Pendências / próximos passos
-- [ ] **Publicar no GitHub Pages** (repo público `benfeitorias`; o workflow já está pronto) e instalar no Android pelo Chrome → "Adicionar à tela inicial". No app do Claude para Android o seletor de arquivos não abre; por isso o app precisa rodar instalado.
+- [x] **Publicado no GitHub Pages** em 20/11/2026: https://danielvasquesaleixo-commits.github.io/benfeitorias/ (repo `danielvasquesaleixo-commits/benfeitorias`, deploy automático a cada push na `main`).
+- [ ] Instalar no Android pelo Chrome → "Adicionar à tela inicial". No app do Claude para Android o seletor de arquivos não abre; por isso o app precisa rodar instalado.
 - [ ] Trocar padrão/conservação por **listas fixas** quando Daniel mandar a tabela de enquadramento que ele usa (manter o texto já digitado).
 - [ ] Ideia aprovada para avaliar: carregar o **ortomosaico do drone** (GeoTIFF/JPG georreferenciado) como fundo offline do mapa.
 - [ ] Ao lançar uma versão, troque o nome do cache em `public/sw.js` (`benfeitorias-vN`).
