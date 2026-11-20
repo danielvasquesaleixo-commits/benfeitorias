@@ -33,6 +33,7 @@ Comandos: `npm ci` → `npm run build` → `npm test` (precisa de `pip install p
 - **ZIP**: `zip()` (store, sem compressão, flag UTF-8) e `unzip()` (deflate via `DecompressionStream('deflate-raw')`).
 - **KML**: `lerKml` (aceita Polygon com furos, LineString, LinearRing, Point, MultiGeometry; uma LineString fechada que não é cerca, estrada ou rede vira polígono).
 - **telas**: `home`, `lista`, `abreItem` (ficha), `cobFicha`, `divFicha`, `fotosItem` (legenda ao tocar na foto), `mapa`/`desenha` (Leaflet; tracejado = pendente, linha cheia = conferido), `exportTela`.
+- **planta pela trena**: `DIRS`, `plantaCalc` (pontos, área, fechamento), `plantaSvg` (SVG com cotas sem sobreposição), `planta(it)` (editor: lados → ↑ ← ↓ + metros, botão Fechar, posição GPS/centro do mapa/manter, giro), `ancora`. Ao usar, grava `campo.planta`, `campo.area` (área direta) e troca a geometria pelo desenho, guardando a original em `it.geoKml`. O relatório mostra o croqui com cotas na ficha.
 - **ficha**: `ACAB`/`ACAB_OP` (paredes, revestimento, piso, teto/forro, telhado, janelas, portas, instalações, outros) → `descAcab`; `descCurral`/`diviCurral` geram textos do curral; `tipologiaPadrao`.
 - **exportação**: `baixa()` usa `<a download>` no app instalado e a capacidade `downloads` quando roda como artifact do Claude (ali kml/kmz saem dentro de .zip). `geraKml`, `geraXlsx` (XLSX mínimo, 2 abas, linha de TOTAL), `croqui` (SVG com escala e norte), `geraRelatorio` (HTML A4; no app instalado abre e chama print → "Salvar como PDF").
 
@@ -42,6 +43,7 @@ Comandos: `npm ci` → `npm run build` → `npm test` (precisa de `pip install p
  kml:{area, perim, comp, larg, ret, nv, len},
  campo:{formato, comp, larg, area, diam, alt, lances, nPal, espPal, reguas, madeira, compLin, port, divs,
         tronco, balanca, embarc, seringa, brete, fios, esp},
+ planta:{lados:[{d:'E'|'N'|'O'|'S', m}], rot, pos}  // dentro de campo; geoKml:{g,c,holes} = geometria original do KML
  cob:{nome, c, kml, campo:{comp,larg,area}, tipo, alt},     // parte coberta do curral
  div:[{id, nome, g, c, kml, tipo}],                          // divisões/componentes do curral
  tipologia, idade, padrao, conserv, descr, divisao, acab:{estr,revest,piso,forro,cob,jan,port,inst,outros},

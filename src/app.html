@@ -430,6 +430,72 @@ function lista(){
   el.querySelectorAll('.item').forEach(c=>c.onclick=ev=>{const okb=ev.target.closest('[data-ok]');const it=PROJ.itens.find(i=>i.id===c.dataset.id);if(okb){it.ok=!it.ok;salva();lista();mapaPronto=false;return}abreItem(it)});
   $('#bNovo').onclick=novoItem;
 }
+// ---------- planta pela trena: lados em sequência (→ ↑ ← ↓ + metros), cantos em ângulo reto ----------
+// campo.planta = {lados:[{d:'E'|'N'|'O'|'S', m}], rot (graus, horário), pos:'manter'|'gps'|'mapa'}
+const DIRS={E:[1,0,'→'],N:[0,1,'↑'],O:[-1,0,'←'],S:[0,-1,'↓']};
+function plantaCalc(pl){const pts=[[0,0]];let x=0,y=0,per=0;for(const l of pl.lados){const m=l.m||0,v=DIRS[l.d];x+=v[0]*m;y+=v[1]*m;per+=m;pts.push([x,y])}
+  const gx=-x,gy=-y,fechada=Math.abs(gx)<0.005&&Math.abs(gy)<0.005,r=pts.slice(0,-1);
+  return {pts,r,gx,gy,fechada,per,area:Math.abs(shoe(fechada?r:pts))}}
+function plantaSvg(pl,W,H,cotas){const k=plantaCalc(pl),p=k.pts;if(p.length<2)return `<svg viewBox="0 0 ${W} ${H}" width="100%"></svg>`;
+  const xs=p.map(q=>q[0]),ys=p.map(q=>q[1]),mx=Math.min(...xs),Mx=Math.max(...xs),my=Math.min(...ys),My=Math.max(...ys),pad=cotas?34:10;
+  const s=Math.min((W-2*pad)/((Mx-mx)||1),(H-2*pad)/((My-my)||1)),ox=(W-(Mx-mx)*s)/2,oy=(H-(My-my)*s)/2;
+  const T=q=>[ox+(q[0]-mx)*s,H-oy-(q[1]-my)*s],sg=shoe(k.r)>=0?1:-1;
+  let g=`<path d="M${p.map(q=>T(q).map(v=>v.toFixed(1)).join(',')).join('L')}${k.fechada?'Z':''}" fill="${k.fechada?'#dc262622':'none'}" stroke="#b91c1c" stroke-width="2" stroke-linejoin="round"/>`;
+  g+=`<circle cx="${T(p[0])[0]}" cy="${T(p[0])[1]}" r="4" fill="#15803d"/>`;
+  if(!k.fechada&&p.length>1)g+=`<line x1="${T(p[p.length-1])[0]}" y1="${T(p[p.length-1])[1]}" x2="${T(p[0])[0]}" y2="${T(p[0])[1]}" stroke="#888" stroke-dasharray="4 4"/>`;
+  if(cotas){const caixas=[]; // cotas: lado vertical com texto ao lado, horizontal acima/abaixo; se encostar em outra, afasta para fora
+    pl.lados.forEach((l,i)=>{if(!l.m)return;const a=T(p[i]),b=T(p[i+1]),v=DIRS[l.d],nx=v[1]*sg,ny=v[0]*sg,vert=v[1]!==0,txt=fmt(l.m),fs=Math.hypot(b[0]-a[0],b[1]-a[1])<24?9:11,w=txt.length*fs*0.55,h=fs;
+      const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;let x,y,bx;
+      for(let t=0;t<6;t++){const o=4+t*9;if(vert){x=mx+nx*o;y=my+4;bx=[nx>0?x:x-w,y-h,w,h]}else{x=mx;y=my+(ny>0?o+h-2:-o);bx=[x-w/2,y-h,w,h]}
+        if(!caixas.some(c=>bx[0]<c[0]+c[2]&&c[0]<bx[0]+bx[2]&&bx[1]<c[1]+c[3]&&c[1]<bx[1]+bx[3]))break}
+      caixas.push(bx);g+=`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${fs}" text-anchor="${vert?(nx>0?'start':'end'):'middle'}" fill="#111">${txt}</text>`})}
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="background:#fff;border:1px solid var(--linha,#ddd);border-radius:8px">${g}</svg>`}
+function planta(it){
+  const c=it.campo,pl=JSON.parse(JSON.stringify(c.planta||{lados:[],rot:0,pos:it.g!=='None'?'manter':'gps'}));
+  const temGeo=it.g==='Polygon'&&!c.planta;
+  const info=k=>`${k.fechada?'<b style="color:var(--verde2)">✓ Planta fechada</b>':`Falta fechar: ${[k.gx?fmt(Math.abs(k.gx))+' m '+(k.gx>0?'→':'←'):'',k.gy?fmt(Math.abs(k.gy))+' m '+(k.gy>0?'↑':'↓'):''].filter(Boolean).join(' e ')}`} · Área <b>${fmt(k.area)} m²</b> · Perímetro ${fmt(k.per)} m`;
+  const tela=()=>{const k=plantaCalc(pl),ult=pl.lados.length?pl.lados[pl.lados.length-1].d:null;
+    modal(`<h3>Planta pela trena</h3>
+     <p class="muted" style="margin-top:0">Comece num canto (ponto verde) e vá contornando: toque na seta da direção e digite a medida de cada lado.</p>
+     <div id="plSvg">${plantaSvg(pl,480,260,true)}</div>
+     <div class="muted" id="plInfo" style="margin:6px 0">${info(k)}</div>
+     <div id="plLados" style="max-height:30dvh;overflow:auto">${pl.lados.map((l,i)=>`<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><span style="width:28px;text-align:right" class="muted">${i+1}</span>
+       <select data-d="${i}" style="width:64px;font-size:18px">${Object.entries(DIRS).map(([kk,v])=>`<option value="${kk}" ${kk===l.d?'selected':''}>${v[2]}</option>`).join('')}</select>
+       <input data-m="${i}" inputmode="decimal" placeholder="metros" value="${inNum(l.m)}" style="flex:1"><button class="chip" data-x="${i}" aria-label="Excluir lado">✕</button></div>`).join('')}</div>
+     <div class="filtros" style="justify-content:center;gap:8px;margin:6px 0">${Object.entries(DIRS).filter(([kk])=>kk!==ult).map(([kk,v])=>`<button class="chip" data-add="${kk}" style="font-size:20px;padding:6px 16px">${v[2]}</button>`).join('')}
+       ${pl.lados.length>=3?'<button class="chip" id="plFecha">Fechar</button>':''}</div>
+     <div class="grid2"><label class="f">Posição no mapa<select id="plPos">${it.g!=='None'?`<option value="manter" ${pl.pos==='manter'?'selected':''}>Manter onde está</option>`:''}<option value="gps" ${pl.pos==='gps'?'selected':''}>Onde estou (GPS)</option><option value="mapa" ${pl.pos==='mapa'?'selected':''}>Centro do mapa</option><option value="nao" ${pl.pos==='nao'?'selected':''}>Não desenhar no mapa</option></select></label>
+       <label class="f">Giro (graus, horário)<input id="plRot" inputmode="decimal" value="${inNum(pl.rot)}"></label></div>
+     ${temGeo?'<p class="muted" style="margin:0">O desenho do KML será trocado pela planta (o original fica guardado).</p>':''}
+     <div class="acoes">${c.planta?'<button class="btn perigo" id="plDel">Apagar</button>':''}<button class="btn sec" id="plC">Cancelar</button><button class="btn" id="plOk">Usar planta</button></div>`);
+    const M=$('#modal'),redesenha=()=>{$('#plSvg').innerHTML=plantaSvg(pl,480,260,true);$('#plInfo').innerHTML=info(plantaCalc(pl))};
+    M.querySelectorAll('[data-m]').forEach(e=>{e.oninput=()=>{pl.lados[+e.dataset.m].m=num(e.value);redesenha()}});
+    M.querySelectorAll('[data-d]').forEach(e=>e.onchange=()=>{pl.lados[+e.dataset.d].d=e.value;tela()});
+    M.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{pl.lados.splice(+b.dataset.x,1);tela()});
+    M.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{pl.lados.push({d:b.dataset.add,m:null});tela();const ins=M.querySelectorAll('[data-m]');const u=ins[ins.length-1];u.focus();u.scrollIntoView({block:'nearest'})});
+    if($('#plFecha'))$('#plFecha').onclick=()=>{const k=plantaCalc(pl);if(k.fechada){toast('A planta já está fechada');return}if(k.gx&&k.gy){toast('Falta fechar nas duas direções: acrescente os lados que faltam',3500);return}pl.lados.push(k.gx?{d:k.gx>0?'E':'O',m:+Math.abs(k.gx).toFixed(2)}:{d:k.gy>0?'N':'S',m:+Math.abs(k.gy).toFixed(2)});tela()};
+    $('#plPos').onchange=e=>pl.pos=e.target.value;$('#plRot').oninput=e=>pl.rot=num(e.target.value)||0;
+    $('#plC').onclick=fechaModal;
+    if($('#plDel'))$('#plDel').onclick=()=>confirma('Apagar a planta desta benfeitoria? A área volta a ser a do KML ou a digitada.',()=>{delete c.planta;c.area=null;if(it.geoKml){Object.assign(it,it.geoKml);delete it.geoKml;it.kml=mede(it)}salva();mapaPronto=false;abreItem(it)});
+    $('#plOk').onclick=async()=>{const kk=plantaCalc(pl);pl.lados=pl.lados.filter(l=>l.m);
+      if(!kk.fechada){toast('A planta não fechou: confira as medidas ou use “Fechar”',3500);return}
+      c.planta=pl;c.area=+kk.area.toFixed(2);c.formato='irregular';
+      if(pl.pos!=='nao'){const anc=await ancora(it,pl.pos);if(anc){if(!it.geoKml&&it.g!=='None')it.geoKml={g:it.g,c:it.c,holes:it.holes};const P=projetor(anc[1],anc[0]),r=kk.r,cx=r.reduce((s,q)=>s+q[0],0)/r.length,cy=r.reduce((s,q)=>s+q[1],0)/r.length,t=(pl.rot||0)*RAD,co=Math.cos(t),si=Math.sin(t);
+        const ring=r.map(([x,y])=>{x-=cx;y-=cy;return P.inv([x*co+y*si,-x*si+y*co])});ring.push(ring[0]);it.g='Polygon';it.c=ring;it.holes=[];it.kml=mede(it);mapaPronto=false}}
+      salva();fechaModal();abreItem(it);toast('Planta salva: '+fmt(c.area)+' m²')};
+  };
+  tela();
+}
+// ponto de referência (lon,lat) para posicionar a planta
+async function ancora(it,pos){
+  if(pos==='manter'&&it.g!=='None'&&it.c&&it.c.length)return centro(it);
+  if(pos==='gps'){if(!navigator.geolocation){toast('GPS indisponível; usando o centro do mapa');pos='mapa'}
+    else{toast('Pegando a posição do GPS…');const p=await new Promise(r=>navigator.geolocation.getCurrentPosition(r,()=>r(null),{enableHighAccuracy:true,timeout:15000,maximumAge:30000}));
+      if(p)return [p.coords.longitude,p.coords.latitude];toast('Sem sinal de GPS; usando o centro do mapa',3000);pos='mapa'}}
+  if(typeof MAP!=='undefined'&&MAP){const c=MAP.getCenter();return [c.lng,c.lat]}
+  const pts=PROJ.itens.filter(i=>i!==it&&i.c&&i.c.length).map(i=>centro(i)).filter(Boolean);
+  if(pts.length)return [pts.reduce((s,q)=>s+q[0],0)/pts.length,pts.reduce((s,q)=>s+q[1],0)/pts.length];
+  toast('Sem referência de posição: a planta ficou só com a área',3500);return null}
 function novoItem(){
   const n=Math.max(0,...PROJ.itens.map(i=>i.n))+1;
   const it={id:uid(),n,nome:'Nova benfeitoria',tipo:'outros',pasta:'Levantado em campo',desc:'',g:'None',c:[],holes:[],kml:{},campo:{},conserv:'',padrao:'',obs:'',fotos:[],ok:false};
@@ -463,6 +529,7 @@ function abreItem(it,novo){
      <label class="f">${fm==='irregular'?'Área medida (m²) — formato irregular: informe a área ou fica a do KML':'Ou área medida direto (m²) — prevalece sobre as demais'}<input id="cArea" inputmode="decimal" value="${inNum(c.area)}"></label>`})()}
      <label class="f">Pé-direito / altura (m)<input id="cAlt" inputmode="decimal" value="${inNum(c.alt)}"></label>`}
    <div class="adot" id="adot"></div>
+   ${ehLin?'':`<button class="btn sec full" id="bPlanta" style="margin:-4px 0 12px">✏️ ${c.planta?`Planta pela trena (${c.planta.lados.length} lados · ${fmt(plantaCalc(c.planta).area)} m²) — editar`:'Desenhar planta pela trena (imóvel com recortes)'}</button>`}
    ${it.tipo==='curral'?`<h2>Cercamento por palanques</h2>
      <div class="grid2"><label class="f">Total de lances (vãos)<input id="cLances" inputmode="numeric" value="${inNum(c.lances)}"></label><label class="f">Nº de palanques<input id="cNPal" inputmode="numeric" value="${inNum(c.nPal)}"></label></div>
      <div class="grid2"><label class="f">Distância entre palanques (m)<input id="cEspPal" inputmode="decimal" value="${inNum(c.espPal)}"></label><label class="f">Réguas por lance<input id="cReg" inputmode="numeric" value="${inNum(c.reguas)}"></label></div>
@@ -508,6 +575,7 @@ function abreItem(it,novo){
   if($('#cFios'))$('#cFios').oninput=e=>{c.fios=e.target.value;salva()};
   $('#iNome').oninput=e=>{it.nome=e.target.value;sh.querySelector('h1').textContent=`#${it.n} ${it.nome}`;salva()};
   $('#iN').onchange=e=>{const v=parseInt(e.target.value);if(v>0){it.n=v;salva();sh.querySelector('h1').textContent=`#${it.n} ${it.nome}`}};
+  if($('#bPlanta'))$('#bPlanta').onclick=()=>planta(it);
   $('#iTipo').onchange=e=>{it.tipo=e.target.value;salva();const y=$('#sheet .corpo').scrollTop;abreItem(it);$('#sheet .corpo').scrollTop=y};
   $('#iCons').oninput=e=>{it.conserv=e.target.value;salva()};
   $('#iTipol').oninput=e=>{it.tipologia=e.target.value;salva()};$('#iIdade').oninput=e=>{it.idade=num(e.target.value);salva()};
@@ -768,6 +836,7 @@ async function geraRelatorio(){
 <div class="hd">Descrição suscinta:</div><div class="bx">${esc(it.descr||'')}</div>
 ${it.divisao?`<div class="hd">Divisão interna:</div><div class="bx">${esc(it.divisao)}</div>`:''}
 <div class="hd" style="margin-top:12px">Aspectos técnicos:</div><table class="at">${rows}</table>
+${c.planta&&c.planta.lados.length?`<div class="hd" style="margin-top:12px">Croqui (medidas de campo, em metros):</div><div style="max-width:120mm;margin:4px auto">${plantaSvg(c.planta,480,300,true)}</div>`:''}
 ${fts?`<div class="pfs">${fts}</div>`:''}</section>`;
   }
   const obs=its.filter(i=>i.obs||(i.campo&&i.campo.fios)).map(i=>`<p><b>${i.n} – ${esc(i.nome)}:</b> ${esc(linhaPlan(i).obs)}</p>`).join('');
