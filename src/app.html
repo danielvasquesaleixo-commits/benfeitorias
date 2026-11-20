@@ -393,7 +393,7 @@ function dadosProjeto(p,novo){
   $('#mOk').onclick=async()=>{p.nome=$('#mNome').value.trim()||'Perícia';p.processo=$('#mProc').value.trim();p.municipio=$('#mMun').value.trim();p.perito=$('#mPer').value.trim();p.crea=$('#mCrea').value.trim();
     try{localStorage.setItem('perito',JSON.stringify({perito:p.perito,crea:p.crea}))}catch(e){}
     p.alterado=Date.now();await DB.put(p);PROJ=p;fechaModal();mapaPronto=false;mostra(VIEW==='vHome'?'vLista':VIEW)};
-  if(!novo)$('#mDel').onclick=()=>confirma('Excluir esta perícia e todas as fotos deste aparelho?',async()=>{for(const it of p.itens)for(const f of it.fotos)await DB.delF(f);await DB.del(p.id);PROJ=null;mostra('vHome')});
+  if(!novo)$('#mDel').onclick=()=>confirma('Excluir esta perícia e todas as fotos deste aparelho?',async()=>{const usadas=new Set((await DB.all()).filter(o=>o.id!==p.id).flatMap(o=>o.itens.flatMap(i=>i.fotos||[])));for(const it of p.itens)for(const f of it.fotos)if(!usadas.has(f))await DB.delF(f);await DB.del(p.id);PROJ=null;mostra('vHome')});
 }
 function resumoTipos(p){const c={};p.itens.forEach(i=>c[i.tipo]=(c[i.tipo]||0)+1);return Object.entries(c).map(([k,n])=>`${n} ${TIPO[k].nome.split(' /')[0].toLowerCase()}`).join(', ')}
 
